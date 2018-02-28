@@ -18,7 +18,7 @@ public class ActionFactory {
       case "/help":
         return new HelpAction(chatId);
       case "/overview":
-        return new OverviewAction(chatId);
+        return new OverviewAction(update.callbackQuery().id());
       case "/register":
         return new RegisterAction(chatId);
       default:
