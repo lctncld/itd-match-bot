@@ -20,7 +20,7 @@ public class MatchApplication {
 
   @Bean
   public RouterFunction<ServerResponse> router() {
-    return route(POST("/").and(accept(APPLICATION_JSON)), telegramHandler::handle);
+    return route(POST("/").and(accept(APPLICATION_JSON)), telegramHandler::route);
   }
 
   public static void main(String[] args) {
