@@ -23,8 +23,11 @@ public class ActionFactory {
       case "/register":
         return new ProfileSetupAction(chatId);
       case "/location":
-//        Location location = update.message().location();
-//        return new
+        Location location = update.message().location();
+        return SetLocationCommand.builder()
+            .chatId(chatId)
+            .location(location)
+            .build();
       default:
         return new NoopAction(chatId);
     }

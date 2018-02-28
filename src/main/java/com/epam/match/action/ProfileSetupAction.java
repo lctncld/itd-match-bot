@@ -6,11 +6,11 @@ import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.SendMessage;
 import reactor.core.publisher.Flux;
 
-public class ProfileSetupAction implements Action {
+class ProfileSetupAction implements Action {
 
   private final Long chatId;
 
-  public ProfileSetupAction(Long chatId) {
+  ProfileSetupAction(Long chatId) {
     this.chatId = chatId;
   }
 
