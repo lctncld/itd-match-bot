@@ -1,6 +1,6 @@
 package com.epam.match;
 
-import com.epam.match.action.Action;
+import com.epam.match.action.ActionFactory;
 import com.pengrad.telegrambot.BotUtils;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.response.BaseResponse;
@@ -23,7 +23,8 @@ public class TelegramWebhookHandler {
   public Mono<ServerResponse> route(ServerRequest request) {
     return request.bodyToMono(String.class)
         .map(BotUtils::parseUpdate)
-        .map(Action::fromUpdate)
+        .map(ActionFactory::fromUpdate)
+        .filter(action -> action != null)
         .map(action -> {
           BaseResponse response = bot.execute(action.toCommand());
           log.info("sendMessage {}", response);
