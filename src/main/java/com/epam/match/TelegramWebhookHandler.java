@@ -1,5 +1,6 @@
 package com.epam.match;
 
+import com.epam.match.action.Action;
 import com.epam.match.action.ActionFactory;
 import com.pengrad.telegrambot.BotUtils;
 import com.pengrad.telegrambot.TelegramBot;
@@ -24,12 +25,14 @@ public class TelegramWebhookHandler {
     return request.bodyToMono(String.class)
         .map(BotUtils::parseUpdate)
         .map(ActionFactory::fromUpdate)
-        .filter(action -> action != null)
-        .map(action -> {
-          BaseResponse response = bot.execute(action.toCommand());
+        .map(Action::execute)
+        .map(commands -> commands.subscribe((command) -> {
+          BaseResponse response = bot.execute(command);
           log.info("sendMessage {}", response);
-          return Mono.empty();
-        })
-        .flatMap(nop -> Mono.empty());
+        }))
+        .flatMap(ok -> {
+          ok.dispose();
+          return ServerResponse.ok().build();
+        });
   }
 }

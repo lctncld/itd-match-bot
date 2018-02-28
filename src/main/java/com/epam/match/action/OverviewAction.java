@@ -2,18 +2,21 @@ package com.epam.match.action;
 
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.BaseRequest;
+import reactor.core.publisher.Flux;
 
-public class OverviewAction implements Action {
+class OverviewAction implements Action {
 
   private final String callbackQueryId;
 
-  public OverviewAction(String callbackQueryId) {
+  OverviewAction(String callbackQueryId) {
     this.callbackQueryId = callbackQueryId;
   }
 
   @Override
-  public BaseRequest toCommand() {
-    return new AnswerCallbackQuery(callbackQueryId)
-        .text("This is just a Demo! Try another button");
+  public Flux<BaseRequest> execute() {
+    return Flux.just(
+        new AnswerCallbackQuery(callbackQueryId)
+            .text("This is just a Demo! Try another button")
+    );
   }
 }

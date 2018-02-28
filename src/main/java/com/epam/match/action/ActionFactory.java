@@ -20,7 +20,8 @@ public class ActionFactory {
       case "/overview":
         return new OverviewAction(update.callbackQuery().id());
       case "/register":
-        return new RegisterAction(chatId);
+        return new RegisterAction(chatId)
+            .callbackQueryId(update.callbackQuery().id());
       default:
         return new NoopAction(chatId);
     }

@@ -3,18 +3,21 @@ package com.epam.match.action;
 import com.pengrad.telegrambot.model.request.ReplyKeyboardRemove;
 import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.SendMessage;
+import reactor.core.publisher.Flux;
 
-public class NoopAction implements Action {
+class NoopAction implements Action {
 
   private final Long chatId;
 
-  public NoopAction(Long chatId) {
+  NoopAction(Long chatId) {
     this.chatId = chatId;
   }
 
   @Override
-  public BaseRequest toCommand() {
-    return new SendMessage(chatId, "Unrecognized command. Try asking for /help")
-        .replyMarkup(new ReplyKeyboardRemove());
+  public Flux<BaseRequest> execute() {
+    return Flux.just(
+        new SendMessage(chatId, "Unrecognized command. Try asking for /help")
+            .replyMarkup(new ReplyKeyboardRemove())
+    );
   }
 }
