@@ -1,6 +1,7 @@
 package com.epam.match.action;
 
 import com.pengrad.telegrambot.model.CallbackQuery;
+import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import lombok.extern.slf4j.Slf4j;
@@ -20,8 +21,10 @@ public class ActionFactory {
       case "/overview":
         return new OverviewAction(update.callbackQuery().id());
       case "/register":
-        return new RegisterAction(chatId)
-            .callbackQueryId(update.callbackQuery().id());
+        return new ProfileSetupAction(chatId);
+      case "/location":
+//        Location location = update.message().location();
+//        return new
       default:
         return new NoopAction(chatId);
     }
@@ -35,11 +38,20 @@ public class ActionFactory {
     }
 
     Message message = update.message();
-    if (message == null) {
-      throw new RuntimeException("Both callback and message are null");
+    if (message != null) {
+
+      String messageText = message.text();
+      if (messageText != null) {
+        return extractCommand(messageText);
+      }
+
+      Location location = message.location();
+      if (location != null) {
+        return "/location";
+      }
+
     }
-    String messageText = message.text();
-    return extractCommand(messageText);
+    throw new RuntimeException("Both callback and message are null");
   }
 
   private static Long chatId(Update update) {
