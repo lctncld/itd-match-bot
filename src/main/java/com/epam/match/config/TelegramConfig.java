@@ -1,4 +1,4 @@
-package com.epam.match;
+package com.epam.match.config;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.request.SetWebhook;

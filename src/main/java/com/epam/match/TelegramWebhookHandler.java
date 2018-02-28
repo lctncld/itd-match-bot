@@ -1,10 +1,9 @@
 package com.epam.match;
 
+import com.epam.match.action.ActionFactory;
 import com.pengrad.telegrambot.BotUtils;
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.Message;
-import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.SendResponse;
+import com.pengrad.telegrambot.response.BaseResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.server.ServerRequest;
@@ -21,14 +20,16 @@ public class TelegramWebhookHandler {
     this.bot = bot;
   }
 
-  public Mono<ServerResponse> handle(ServerRequest request) {
+  public Mono<ServerResponse> route(ServerRequest request) {
     return request.bodyToMono(String.class)
         .map(BotUtils::parseUpdate)
-        .flatMap(update -> {
-          Message message = update.message();
-          SendResponse response = bot.execute(new SendMessage(message.chat().id(), message.text()));
+        .map(ActionFactory::fromUpdate)
+        .filter(action -> action != null)
+        .map(action -> {
+          BaseResponse response = bot.execute(action.toCommand());
           log.info("sendMessage {}", response);
           return Mono.empty();
-        });
+        })
+        .flatMap(nop -> Mono.empty());
   }
 }
