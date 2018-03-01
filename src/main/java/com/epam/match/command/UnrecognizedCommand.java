@@ -8,4 +8,6 @@ import lombok.Data;
 public class UnrecognizedCommand {
 
   private final Long chatId;
+
+  private final String text;
 }

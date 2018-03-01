@@ -1,5 +1,6 @@
 package com.epam.match.service;
 
+import com.epam.match.Steps;
 import com.epam.match.command.profile.my.age.AskForMyAgeCommand;
 import com.epam.match.command.profile.SetupProfileCommand;
 import com.epam.match.command.profile.SetLocationCommand;
@@ -19,9 +20,12 @@ public class ProfileService {
 
   private final RedisReactiveCommands<String, String> commands;
 
-  public ProfileService(TelegramBot bot, RedisReactiveCommands<String, String> commands) {
+  private final SessionService sessionService;
+
+  public ProfileService(TelegramBot bot, RedisReactiveCommands<String, String> commands, SessionService sessionService) {
     this.bot = bot;
     this.commands = commands;
+    this.sessionService = sessionService;
   }
 
   public Mono<Void> setupProfile(SetupProfileCommand command) {
@@ -53,7 +57,8 @@ public class ProfileService {
 
   public Mono<Void> askAge(AskForMyAgeCommand command) {
     SendMessage cmd = new SendMessage(command.getChatId(), "So, what's your age?");
-    return Mono.just(cmd)
+    return sessionService.set(command.getUserId().toString(), Steps.SET_MY_AGE)
+        .thenReturn(cmd)
         .map(bot::execute)
         .then();
   }
@@ -61,7 +66,7 @@ public class ProfileService {
   public Mono<Void> setAge(SetMyAgeCommand command) {
     return commands.hset("users", command.getUserId().toString(), command.getAge().toString())
         .thenReturn(new SendMessage(command.getChatId(), String.format("Okay, your age is %s", command.getAge())))
-        .map(a -> bot.execute(a))
+        .map(bot::execute)
         .then();
   }
 

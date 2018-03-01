@@ -8,4 +8,6 @@ import lombok.Data;
 public class AskForMyAgeCommand {
 
   private final Long chatId;
+
+  private final Integer userId;
 }

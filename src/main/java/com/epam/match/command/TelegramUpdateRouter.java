@@ -1,10 +1,11 @@
 package com.epam.match.command;
 
-import com.epam.match.command.profile.my.age.AskForMyAgeCommand;
-import com.epam.match.command.profile.SetupProfileCommand;
 import com.epam.match.command.profile.SetLocationCommand;
+import com.epam.match.command.profile.SetupProfileCommand;
+import com.epam.match.command.profile.my.age.AskForMyAgeCommand;
 import com.epam.match.command.profile.my.age.SetMyAgeCommand;
 import com.epam.match.service.ProfileService;
+import com.epam.match.service.SessionService;
 import com.epam.match.service.StubService;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Location;
@@ -22,22 +23,39 @@ public class TelegramUpdateRouter {
 
   private final StubService stubService;
 
-  public TelegramUpdateRouter(ProfileService profileService, StubService stubService) {
+  private final SessionService sessionService;
+
+  public TelegramUpdateRouter(ProfileService profileService, StubService stubService, SessionService sessionService) {
     this.profileService = profileService;
     this.stubService = stubService;
+    this.sessionService = sessionService;
   }
 
-  public Mono<Void> route(Update update) {
+  public Mono<?> route(Update update) {
     String command = command(update);
     Long chatId = chatId(update);
     if (command == null) {
-      Message message = update.message();
-      SetMyAgeCommand cmd = SetMyAgeCommand.builder()
-          .chatId(message.chat().id())
-          .userId(message.from().id())
-          .age(Integer.valueOf(message.text()))
-          .build();
-      return profileService.setAge(cmd);
+      Integer userId = update.message().from().id();
+      return sessionService.get(userId.toString())
+          .flatMap(step -> {
+            switch (step) {
+              case SET_MY_AGE:
+                Message message = update.message();
+                SetMyAgeCommand cmd = SetMyAgeCommand.builder()
+                    .chatId(message.chat().id())
+                    .userId(message.from().id())
+                    .age(Integer.valueOf(message.text()))
+                    .build();
+                return profileService.setAge(cmd);
+              case UNKNOWN:
+              default:
+                return stubService.unknownCommand(UnrecognizedCommand.builder()
+                    .chatId(chatId)
+                    .text(update.message().text())
+                    .build());
+            }
+          })
+          .then(sessionService.clear(userId.toString()));
     }
     switch (command) {
       case "/help":
@@ -58,6 +76,7 @@ public class TelegramUpdateRouter {
       case "/profile/me/age":
         AskForMyAgeCommand cmd1 = AskForMyAgeCommand.builder()
             .chatId(chatId)
+            .userId(update.callbackQuery().from().id())
             .build();
         return profileService.askAge(cmd1);
       case "/location":

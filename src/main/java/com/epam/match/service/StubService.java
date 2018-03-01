@@ -22,7 +22,8 @@ public class StubService {
   }
 
   public Mono<Void> unknownCommand(UnrecognizedCommand command) {
-    SendMessage cmd = new SendMessage(command.getChatId(), "Unrecognized command. Try asking for /help")
+    SendMessage cmd = new SendMessage(command.getChatId(),
+        String.format("Unrecognized command \"%s\". Try asking for /help", command.getText()))
         .replyMarkup(new ReplyKeyboardRemove());
     return Mono.just(cmd)
         .map(bot::execute)
