@@ -60,6 +60,11 @@
       <artifactId>spring-boot-configuration-processor</artifactId>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>io.lettuce</groupId>
+      <artifactId>lettuce-core</artifactId>
+      <version>5.0.2.RELEASE</version>
+    </dependency>
   </dependencies>
 
   <build>
