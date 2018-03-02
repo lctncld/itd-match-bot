@@ -9,6 +9,7 @@ One day, one day...
 - Java 8
 - Spring Boot 2
 - Spring WebFlux (Netty web server)
+- Redis
 - [java-telegram-bot-api](https://github.com/pengrad/java-telegram-bot-api)
 - [ngrok](https://ngrok.com/)
 
@@ -29,4 +30,14 @@ telegram:
   webhook_url: https://...ngrok.io
 
 ```
+- Grab and start redis:
+```
+docker run --name itd-redis -p 6379:6379 -d redis:4
+```
+
+To examine its contents directly, use
+```
+docker exec -it itd-redis redis-cli
+```
+
 - Run application and try to ping your bot from Telegram
