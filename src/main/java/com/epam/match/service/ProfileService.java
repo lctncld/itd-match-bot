@@ -24,15 +24,12 @@ public class ProfileService {
 
   private final RedisReactiveCommands<String, String> commands;
 
-  private final SessionService sessionService;
-
   private final LocationService locationService;
 
-  public ProfileService(TelegramBot bot, RedisReactiveCommands<String, String> commands, SessionService sessionService,
+  public ProfileService(TelegramBot bot, RedisReactiveCommands<String, String> commands,
       LocationService locationService) {
     this.bot = bot;
     this.commands = commands;
-    this.sessionService = sessionService;
     this.locationService = locationService;
   }
 
