@@ -1,10 +1,10 @@
 package com.epam.match;
 
 import com.epam.match.domain.Gender;
+import com.epam.match.service.MessageService;
 import com.epam.match.service.ProfileService;
 import com.epam.match.service.QuestionService;
 import com.epam.match.service.SessionService;
-import com.epam.match.service.StubService;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
@@ -21,15 +21,16 @@ public class TelegramUpdateRouter {
 
   private final QuestionService questionService;
 
-  private final StubService stubService;
+  private final MessageService messageService;
 
   private final SessionService sessionService;
 
-  public TelegramUpdateRouter(ProfileService profileService, QuestionService questionService, StubService stubService,
+  public TelegramUpdateRouter(ProfileService profileService, QuestionService questionService,
+      MessageService messageService,
       SessionService sessionService) {
     this.profileService = profileService;
     this.questionService = questionService;
-    this.stubService = stubService;
+    this.messageService = messageService;
     this.sessionService = sessionService;
   }
 
@@ -48,16 +49,16 @@ public class TelegramUpdateRouter {
                 return profileService.setMatchMaxAge(update);
               case UNKNOWN:
               default:
-                return stubService.unknownCommand(update);
+                return messageService.unknownCommand(update);
             }
           })
           .then(sessionService.clear(userId.toString()));
     }
     switch (command) {
       case "/help":
-        return stubService.help(update);
+        return messageService.help(update);
       case "/overview":
-        return stubService.overview(update);
+        return messageService.overview(update);
       case "/register":
         return profileService.setupProfile(update);
       case "/profile/me/gender":
@@ -80,10 +81,12 @@ public class TelegramUpdateRouter {
         return questionService.askMatchMinAge(update);
       case "/profile/match/age/max":
         return questionService.askMatchMaxAge(update);
+      case "/profile/done":
+        return messageService.leaveProfileConfiguration(update);
       case "/location":
         return profileService.setLocation(update);
       default:
-        return stubService.unknownCommand(update);
+        return messageService.unknownCommand(update);
     }
   }
 
