@@ -13,6 +13,12 @@ One day, one day...
 - [java-telegram-bot-api](https://github.com/pengrad/java-telegram-bot-api)
 - [ngrok](https://ngrok.com/)
 
+## Database Structure
+
+Redis KEYs:
+- users (HASH user_id -> ...profile params)
+- locations (SORTEDSET lat, lon -> user_id)
+- session (HASH user_id -> current_step)
 
 ## Development guidelines
 
