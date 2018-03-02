@@ -1,5 +1,6 @@
 package com.epam.match;
 
+import com.epam.match.domain.Gender;
 import com.epam.match.service.ProfileService;
 import com.epam.match.service.QuestionService;
 import com.epam.match.service.SessionService;
@@ -41,6 +42,10 @@ public class TelegramUpdateRouter {
             switch (step) {
               case SET_MY_AGE:
                 return profileService.setAge(update);
+              case SET_MATCH_MIN_AGE:
+                return profileService.setMatchMinAge(update);
+              case SET_MATCH_MAX_AGE:
+                return profileService.setMatchMaxAge(update);
               case UNKNOWN:
               default:
                 return stubService.unknownCommand(update);
@@ -58,16 +63,19 @@ public class TelegramUpdateRouter {
       case "/profile/me/gender":
         return questionService.askGender(update);
       case "/profile/me/gender/male":
+        return profileService.setGender(update, Gender.MALE);
       case "/profile/me/gender/female":
-        return profileService.setGender(update);
+        return profileService.setGender(update, Gender.FEMALE);
       case "/profile/me/age":
         return questionService.askAge(update);
       case "/profile/match/gender":
         return questionService.askMatchGender(update);
       case "/profile/match/gender/male":
+        return profileService.setMatchGender(update, Gender.MALE);
       case "/profile/match/gender/female":
+        return profileService.setMatchGender(update, Gender.FEMALE);
       case "/profile/match/gender/both":
-        return profileService.setMatchGender(update);
+        return profileService.setMatchGender(update, Gender.BOTH);
       case "/profile/match/age/min":
         return questionService.askMatchMinAge(update);
       case "/profile/match/age/max":

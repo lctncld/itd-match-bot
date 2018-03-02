@@ -1,7 +1,9 @@
 package com.epam.match.service;
 
 import com.epam.match.RedisKeys;
+import com.epam.match.domain.Gender;
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
@@ -78,17 +80,45 @@ public class ProfileService {
   }
 
   public Mono<Void> setLocation(Update update) {
-    return locationService.set(update.message().from().id().toString(), update.message().location())
-        .thenReturn(new SendMessage(update.message().chat().id(), "Your location is updated"))
+    Message message = update.message();
+    return locationService.set(message.from().id().toString(), message.location())
+        .thenReturn(new SendMessage(message.chat().id(), "Your location is updated"))
         .map(bot::execute)
         .then();
   }
 
-  public Mono<Void> setMatchGender(Update update) {
-    return null;
+  public Mono<Void> setMatchGender(Update update, Gender gender) {
+    CallbackQuery cb = update.callbackQuery();
+    return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("matchGender", gender.toString()))
+        .thenReturn(new SendMessage(cb.message().chat().id(), "Now looking for " + gender.toString()))
+        .map(bot::execute)
+        .then();
+
   }
 
-  public Mono<Void> setGender(Update gender) {
-    return null;
+  public Mono<Void> setGender(Update update, Gender gender) {
+    CallbackQuery cb = update.callbackQuery();
+    return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("gender", gender.toString()))
+        .thenReturn(new SendMessage(cb.message().chat().id(), String.format("You are %s, understood", gender.toString())))
+        .map(bot::execute)
+        .then();
+  }
+
+  public Mono<Void> setMatchMinAge(Update update) {
+    Message message = update.message();
+    String age = message.text();
+    return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("matchMinAge", age))
+        .thenReturn(new SendMessage(message.chat().id(), String.format("Okay, match mix age is %s", age)))
+        .map(bot::execute)
+        .then();
+  }
+
+  public Mono<Void> setMatchMaxAge(Update update) {
+    Message message = update.message();
+    String age = message.text();
+    return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("matchMaxAge", age))
+        .thenReturn(new SendMessage(message.chat().id(), String.format("Set match max age to %s", age)))
+        .map(bot::execute)
+        .then();
   }
 }
