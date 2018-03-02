@@ -7,4 +7,8 @@ public final class RedisKeys {
   public static String user(Integer id) {
     return KEY + ":" + id.toString();
   }
+
+  public static String locations() {
+    return "locations";
+  }
 }

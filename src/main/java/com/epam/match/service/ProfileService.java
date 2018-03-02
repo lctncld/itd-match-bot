@@ -96,8 +96,7 @@ public class ProfileService {
     Long chatId = message.chat().id();
     return locationService.set(message.from().id().toString(), message.location())
         .thenMany(Flux.just(
-            new SendMessage(chatId, "Your location is updated"),
-            profileMenu(chatId, "Anything else?")
+            new SendMessage(chatId, "Your location is updated, I'll let others know")
         )).map(bot::execute)
         .then();
   }
