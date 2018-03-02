@@ -12,6 +12,10 @@ import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.stream.Collectors;
+
+import static java.util.Collections.singletonMap;
+
 @Service
 public class ProfileService {
 
@@ -34,30 +38,41 @@ public class ProfileService {
   }
 
   public Mono<Void> setupProfile(Update update) {
-    SendMessage cmd = new SendMessage(update.callbackQuery().message().chat().id(), "TODO: get current profile")
-        .replyMarkup(new InlineKeyboardMarkup(
-            new InlineKeyboardButton[] {
-                new InlineKeyboardButton("Your gender")
-                    .callbackData("/profile/me/gender"),
-                new InlineKeyboardButton("Your age")
-                    .callbackData("/profile/me/age"),
-            },
-            new InlineKeyboardButton[] {
-                new InlineKeyboardButton("Gender")
-                    .callbackData("/profile/match/gender"),
-                new InlineKeyboardButton("Min age")
-                    .callbackData("/profile/match/age/from"),
-                new InlineKeyboardButton("Max age")
-                    .callbackData("/profile/match/age/to")
-            },
-            new InlineKeyboardButton[] {
-                new InlineKeyboardButton("No more changes needed")
-                    .callbackData("/profile/done")
-            }
-        ));
-    return Mono.just(cmd)
-        .map(bot::execute)
-        .then();
+    InlineKeyboardMarkup actions = new InlineKeyboardMarkup(
+        new InlineKeyboardButton[] {
+            new InlineKeyboardButton("Your gender")
+                .callbackData("/profile/me/gender"),
+            new InlineKeyboardButton("Your age")
+                .callbackData("/profile/me/age"),
+        },
+        new InlineKeyboardButton[] {
+            new InlineKeyboardButton("Gender")
+                .callbackData("/profile/match/gender"),
+            new InlineKeyboardButton("Min age")
+                .callbackData("/profile/match/age/from"),
+            new InlineKeyboardButton("Max age")
+                .callbackData("/profile/match/age/to")
+        },
+        new InlineKeyboardButton[] {
+            new InlineKeyboardButton("No more changes needed")
+                .callbackData("/profile/done")
+        }
+    );
+    Long chatId = update.callbackQuery().message().chat().id();
+    return commands.hgetall(key(update.callbackQuery().from().id()))
+        .map(profile -> {
+          String message = profile.isEmpty()
+              ? "Your profile appears to be blank, tap these buttons to fill it!"
+              : "So, your settings are:\n" + profile.entrySet().stream()
+                  .map(entry -> entry.getKey() + ": " + entry.getValue())
+                  .collect(Collectors.joining(", "));
+          return bot.execute(new SendMessage(chatId, message)
+              .replyMarkup(actions));
+        }).then();
+  }
+
+  private String key(Integer userId) {
+    return KEY + ":" + userId.toString();
   }
 
   public Mono<Void> askAge(Update update) {
@@ -71,7 +86,7 @@ public class ProfileService {
   public Mono<Void> setAge(Update update) {
     Message message = update.message();
     String age = message.text();
-    return commands.hset(KEY, message.from().id().toString(), age)
+    return commands.hmset(key(message.from().id()), singletonMap("age", age))
         .thenReturn(new SendMessage(message.chat().id(), String.format("Okay, your age is %s", age)))
         .map(bot::execute)
         .then();
