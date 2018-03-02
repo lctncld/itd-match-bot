@@ -36,7 +36,7 @@ public class ProfileService {
     this.locationService = locationService;
   }
 
-  public Mono<Void> setupProfile(Update update) {
+  private SendMessage profileMenu(Long chatId, String message) {
     InlineKeyboardMarkup actions = new InlineKeyboardMarkup(
         new InlineKeyboardButton[] {
             new InlineKeyboardButton("Your gender")
@@ -57,6 +57,11 @@ public class ProfileService {
                 .callbackData("/profile/done")
         }
     );
+    return new SendMessage(chatId, message)
+        .replyMarkup(actions);
+  }
+
+  public Mono<Void> setupProfile(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return commands.hgetall(RedisKeys.user(cb.from().id())) //FIXME unchecked assignment
@@ -66,7 +71,7 @@ public class ProfileService {
               : "So, your settings are:\n" + profile.entrySet().stream()
                   .map(entry -> entry.getKey() + ": " + entry.getValue())
                   .collect(Collectors.joining(", "));
-          return new SendMessage(chatId, message).replyMarkup(actions);
+          return profileMenu(chatId, message);
         })
         .cast(BaseRequest.class)
         .concatWith(Mono.just(new AnswerCallbackQuery(cb.id())))
@@ -77,26 +82,34 @@ public class ProfileService {
   public Mono<Void> setAge(Update update) {
     Message message = update.message();
     String age = message.text();
+    Long chatId = message.chat().id();
     return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("age", age))
-        .thenReturn(new SendMessage(message.chat().id(), String.format("Okay, your age is %s", age)))
-        .map(bot::execute)
+        .thenMany(Flux.just(
+            new SendMessage(chatId, String.format("Okay, your age is %s", age)),
+            profileMenu(chatId, "Anything else?")
+        )).map(bot::execute)
         .then();
   }
 
   public Mono<Void> setLocation(Update update) {
     Message message = update.message();
+    Long chatId = message.chat().id();
     return locationService.set(message.from().id().toString(), message.location())
-        .thenReturn(new SendMessage(message.chat().id(), "Your location is updated"))
-        .map(bot::execute)
+        .thenMany(Flux.just(
+            new SendMessage(chatId, "Your location is updated"),
+            profileMenu(chatId, "Anything else?")
+        )).map(bot::execute)
         .then();
   }
 
   public Mono<Void> setMatchGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
+    Long chatId = cb.message().chat().id();
     return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("matchGender", gender.toString()))
         .thenMany(Flux.just(
             new AnswerCallbackQuery(cb.id()),
-            new SendMessage(cb.message().chat().id(), "Now looking for " + gender.toString())
+            new SendMessage(chatId, "Now looking for " + gender.toString()),
+            profileMenu(chatId, "Anything else?")
         )).map(bot::execute)
         .then();
 
@@ -104,10 +117,12 @@ public class ProfileService {
 
   public Mono<Void> setGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
+    Long chatId = cb.message().chat().id();
     return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("gender", gender.toString()))
         .thenMany(Flux.just(
             new AnswerCallbackQuery(cb.id()),
-            new SendMessage(cb.message().chat().id(), String.format("You are %s, understood", gender.toString()))
+            new SendMessage(chatId, String.format("You are %s, understood", gender.toString())),
+            profileMenu(chatId, "Anything else?")
         )).map(bot::execute)
         .then();
   }
@@ -115,18 +130,24 @@ public class ProfileService {
   public Mono<Void> setMatchMinAge(Update update) {
     Message message = update.message();
     String age = message.text();
+    Long chatId = message.chat().id();
     return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("matchMinAge", age))
-        .thenReturn(new SendMessage(message.chat().id(), String.format("Okay, match mix age is %s", age)))
-        .map(bot::execute)
+        .thenMany(Flux.just(
+            new SendMessage(chatId, String.format("Okay, match min age is %s", age)),
+            profileMenu(chatId, "Anything else?")
+        )).map(bot::execute)
         .then();
   }
 
   public Mono<Void> setMatchMaxAge(Update update) {
     Message message = update.message();
     String age = message.text();
+    Long chatId = message.chat().id();
     return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("matchMaxAge", age))
-        .thenReturn(new SendMessage(message.chat().id(), String.format("Set match max age to %s", age)))
-        .map(bot::execute)
+        .thenMany(Flux.just(
+            new SendMessage(chatId, String.format("Set match max age to %s", age)),
+            profileMenu(chatId, "Anything else?")
+        )).map(bot::execute)
         .then();
   }
 }
