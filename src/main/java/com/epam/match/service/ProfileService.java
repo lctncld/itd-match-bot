@@ -62,7 +62,7 @@ public class ProfileService {
   }
 
   public Mono<Void> setupProfile(Update update) {
-    CallbackQuery cb = update.callbackQuery();
+    CallbackQuery cb = update.callbackQuery(); //FIXME extract props outside for command to work outside of callback
     Long chatId = cb.message().chat().id();
     return commands.hgetall(RedisKeys.user(cb.from().id())) //FIXME unchecked assignment
         .map(profile -> {

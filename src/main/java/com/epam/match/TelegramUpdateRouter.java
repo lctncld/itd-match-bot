@@ -59,7 +59,7 @@ public class TelegramUpdateRouter {
         return messageService.help(update);
       case "/overview":
         return messageService.overview(update);
-      case "/register":
+      case "/profile":
         return profileService.setupProfile(update);
       case "/profile/me/gender":
         return questionService.askGender(update);

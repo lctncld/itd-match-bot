@@ -43,7 +43,7 @@ public class MessageService {
                     new InlineKeyboardButton("What is This?")
                         .callbackData("/overview"),
                     new InlineKeyboardButton("Get In")
-                        .callbackData("/register")
+                        .callbackData("/profile")
                 })
             )
     ).map(bot::execute)
