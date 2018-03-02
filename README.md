@@ -28,7 +28,7 @@ Commit to `dev` or feature branches, commits to `master` trigger deployment to H
 
 - Install ngrok from website or, on a mac, with `brew cask install ngrok`.
 - Expose port 8080 with `ngrok http 8080`
-- Overwrite these props in `application.yml` or set them
+- Add these props to `application-dev.yml` or set them
 [some other way](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html).
 ```
 telegram:
