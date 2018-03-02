@@ -56,6 +56,7 @@ public class TelegramUpdateRouter {
     }
     switch (command) {
       case "/help":
+      case "/start":
         return messageService.help(update);
       case "/overview":
         return messageService.overview(update);
