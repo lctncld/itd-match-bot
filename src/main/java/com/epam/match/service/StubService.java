@@ -1,6 +1,7 @@
 package com.epam.match.service;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
@@ -20,9 +21,12 @@ public class StubService {
   }
 
   public Mono<Void> unknownCommand(Update update) {
-
-    SendMessage cmd = new SendMessage(update.message().chat().id(),
-        String.format("Unrecognized command \"%s\". Try asking for /help", update.message().text()))
+    Message message = update.message();
+    if (message == null) {
+      message = update.callbackQuery().message();
+    }
+    SendMessage cmd = new SendMessage(message.chat().id(),
+        String.format("Unrecognized command \"%s\". Try asking for /help", message.text()))
         .replyMarkup(new ReplyKeyboardRemove());
     return Mono.just(cmd)
         .map(bot::execute)
