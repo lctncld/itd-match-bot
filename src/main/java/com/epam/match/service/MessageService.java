@@ -1,6 +1,7 @@
 package com.epam.match.service;
 
 import com.pengrad.telegrambot.TelegramBot;
+import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
@@ -9,6 +10,7 @@ import com.pengrad.telegrambot.model.request.ReplyKeyboardRemove;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.SendMessage;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -57,8 +59,10 @@ public class MessageService {
   }
 
   public Mono<Void> leaveProfileConfiguration(Update update) {
-    return Mono.just(
-        new SendMessage(update.callbackQuery().message().chat().id(), "Okay, Done!")
+    CallbackQuery cb = update.callbackQuery();
+    return Flux.just(
+        new AnswerCallbackQuery(cb.id()),
+        new SendMessage(cb.message().chat().id(), "Okay, Done!")
     ).map(bot::execute)
         .then();
   }

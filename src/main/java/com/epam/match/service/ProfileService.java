@@ -8,9 +8,12 @@ import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.request.AnswerCallbackQuery;
+import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.SendMessage;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.util.stream.Collectors;
@@ -54,17 +57,21 @@ public class ProfileService {
                 .callbackData("/profile/done")
         }
     );
-    Long chatId = update.callbackQuery().message().chat().id();
-    return commands.hgetall(RedisKeys.user(update.callbackQuery().from().id()))
+    CallbackQuery cb = update.callbackQuery();
+    Long chatId = cb.message().chat().id();
+    return commands.hgetall(RedisKeys.user(cb.from().id())) //FIXME unchecked assignment
         .map(profile -> {
           String message = profile.isEmpty()
               ? "Your profile appears to be blank, tap these buttons to fill it!"
               : "So, your settings are:\n" + profile.entrySet().stream()
                   .map(entry -> entry.getKey() + ": " + entry.getValue())
                   .collect(Collectors.joining(", "));
-          return bot.execute(new SendMessage(chatId, message)
-              .replyMarkup(actions));
-        }).then();
+          return new SendMessage(chatId, message).replyMarkup(actions);
+        })
+        .cast(BaseRequest.class)
+        .concatWith(Mono.just(new AnswerCallbackQuery(cb.id())))
+        .map(bot::execute)
+        .then();
   }
 
   public Mono<Void> setAge(Update update) {
@@ -87,8 +94,10 @@ public class ProfileService {
   public Mono<Void> setMatchGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("matchGender", gender.toString()))
-        .thenReturn(new SendMessage(cb.message().chat().id(), "Now looking for " + gender.toString()))
-        .map(bot::execute)
+        .thenMany(Flux.just(
+            new AnswerCallbackQuery(cb.id()),
+            new SendMessage(cb.message().chat().id(), "Now looking for " + gender.toString())
+        )).map(bot::execute)
         .then();
 
   }
@@ -96,8 +105,10 @@ public class ProfileService {
   public Mono<Void> setGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("gender", gender.toString()))
-        .thenReturn(new SendMessage(cb.message().chat().id(), String.format("You are %s, understood", gender.toString())))
-        .map(bot::execute)
+        .thenMany(Flux.just(
+            new AnswerCallbackQuery(cb.id()),
+            new SendMessage(cb.message().chat().id(), String.format("You are %s, understood", gender.toString()))
+        )).map(bot::execute)
         .then();
   }
 
