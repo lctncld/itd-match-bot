@@ -31,10 +31,9 @@ Commit to `dev` or feature branches, commits to `master` trigger deployment to H
 - Add these props to `application-dev.yml` or set them
 [some other way](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-external-config.html).
 ```
-telegram:
-  token: so-secret-much-token
-  webhook_url: https://...ngrok.io
-
+TELEGRAM_TOKEN: so-secret-much-token-generate-it-yourself
+TELEGRAM_WEBHOOK_URL: https://...ngrok.io
+REDIS_URL: redis://localhost:6379
 ```
 - Grab and start redis:
 ```
