@@ -82,7 +82,7 @@ public class TelegramUpdateRouter {
       case "/profile/match/age/max":
         return questionService.askMatchMaxAge(update);
       case "/profile/done":
-        return messageService.leaveProfileConfiguration(update);
+        return profileService.leaveProfileConfiguration(update);
       case "/location":
         return profileService.setLocation(update);
       default:

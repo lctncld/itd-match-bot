@@ -9,7 +9,6 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
-import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.SendMessage;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Service;
@@ -63,17 +62,20 @@ public class ProfileService {
 
   public Mono<Void> setupProfile(Update update) {
     Message message = update.message();
-    return commands.hgetall(RedisKeys.user(message.from().id())) //FIXME unchecked assignment
-        .map(profile -> {
-          String info = profile.isEmpty()
-              ? "Your profile appears to be blank, tap these buttons to fill it!"
-              : "So, your settings are:\n" + profile.entrySet().stream()
-                  .map(entry -> entry.getKey() + ": " + entry.getValue())
-                  .collect(Collectors.joining(", "));
-          return profileMenu(message.chat().id(), info);
-        })
+    return getProfileAsString(message.from().id())
+        .map(profile -> profileMenu(message.chat().id(), profile))
         .map(bot::execute)
         .then();
+  }
+
+  private Mono<String> getProfileAsString(Integer userId) {
+    return commands.hgetall(RedisKeys.user(userId)) //FIXME unchecked assignment
+        .map(profile -> profile.isEmpty()
+            ? "Your profile appears to be blank, tap these buttons to fill it!"
+            : "So, your settings are:\n" + profile.entrySet().stream()
+                .map(entry -> entry.getKey() + ": " + entry.getValue())
+                .collect(Collectors.joining(", "))
+        );
   }
 
   public Mono<Void> setAge(Update update) {
@@ -144,6 +146,16 @@ public class ProfileService {
         .thenMany(Flux.just(
             new SendMessage(chatId, String.format("Set match max age to %s", age)),
             profileMenu(chatId, "Anything else?")
+        )).map(bot::execute)
+        .then();
+  }
+
+  public Mono<Void> leaveProfileConfiguration(Update update) {
+    CallbackQuery cb = update.callbackQuery();
+    return getProfileAsString(cb.from().id())
+        .flatMapMany(profile -> Flux.just(
+            new SendMessage(cb.message().chat().id(), profile),
+            new AnswerCallbackQuery(cb.id())
         )).map(bot::execute)
         .then();
   }
