@@ -1,6 +1,6 @@
 package com.epam.match.service;
 
-import com.epam.match.Steps;
+import com.epam.match.session.Step;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
@@ -14,6 +14,8 @@ import reactor.core.publisher.Mono;
 
 @Service
 public class ProfileService {
+
+  private static final String KEY = "users";
 
   private final TelegramBot bot;
 
@@ -60,7 +62,7 @@ public class ProfileService {
 
   public Mono<Void> askAge(Update update) {
     CallbackQuery callbackQuery = update.callbackQuery();
-    return sessionService.set(callbackQuery.from().id().toString(), Steps.SET_MY_AGE)
+    return sessionService.set(callbackQuery.from().id().toString(), Step.SET_MY_AGE)
         .thenReturn(new SendMessage(callbackQuery.message().chat().id(), "So, what's your age?"))
         .map(bot::execute)
         .then();
@@ -69,7 +71,7 @@ public class ProfileService {
   public Mono<Void> setAge(Update update) {
     Message message = update.message();
     String age = message.text();
-    return commands.hset("users", message.from().id().toString(), age)
+    return commands.hset(KEY, message.from().id().toString(), age)
         .thenReturn(new SendMessage(message.chat().id(), String.format("Okay, your age is %s", age)))
         .map(bot::execute)
         .then();

@@ -8,6 +8,8 @@ import reactor.core.publisher.Mono;
 @Service
 public class LocationService {
 
+  private static final String KEY = "locations";
+
   private final RedisReactiveCommands<String, String> commands;
 
   public LocationService(RedisReactiveCommands<String, String> commands) {
@@ -16,7 +18,7 @@ public class LocationService {
 
   public Mono<Void> set(String userId, Location location) {
     return commands.geoadd(
-        "locations",
+        KEY,
         location.latitude(),
         location.longitude(),
         userId
