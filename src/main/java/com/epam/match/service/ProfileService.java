@@ -9,6 +9,7 @@ import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
+import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Service;
@@ -152,10 +153,12 @@ public class ProfileService {
 
   public Mono<Void> leaveProfileConfiguration(Update update) {
     CallbackQuery cb = update.callbackQuery();
+    Long chatId = cb.message().chat().id();
     return getProfileAsString(cb.from().id())
         .flatMapMany(profile -> Flux.just(
-            new SendMessage(cb.message().chat().id(), profile),
-            new AnswerCallbackQuery(cb.id())
+            new SendMessage(chatId, profile),
+            new AnswerCallbackQuery(cb.id()),
+            new DeleteMessage(chatId, cb.message().messageId())
         )).map(bot::execute)
         .then();
   }
