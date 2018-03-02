@@ -21,6 +21,7 @@ public class TelegramConfig {
 
   @Bean
   public TelegramBot telegramBot() {
+    log.info("Telegram props: {}", telegram);
     TelegramBot bot = new TelegramBot.Builder(telegram.getToken()).build();
     BaseResponse res = bot.execute(new SetWebhook().url(telegram.getWebHookUrl()));
     log.info("setWebhook {}", res);
