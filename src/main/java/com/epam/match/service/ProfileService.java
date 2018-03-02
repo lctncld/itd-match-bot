@@ -73,7 +73,7 @@ public class ProfileService {
     return commands.hgetall(RedisKeys.user(userId)) //FIXME unchecked assignment
         .map(profile -> profile.isEmpty()
             ? "Your profile appears to be blank, tap these buttons to fill it!"
-            : "So, your settings are:\n" + profile.entrySet().stream()
+            : "Your settings are:\n" + profile.entrySet().stream()
                 .map(entry -> entry.getKey() + ": " + entry.getValue())
                 .collect(Collectors.joining(", "))
         );
