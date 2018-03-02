@@ -1,8 +1,7 @@
 package com.epam.match.service;
 
-import com.epam.match.session.Step;
+import com.epam.match.RedisKeys;
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
@@ -18,8 +17,6 @@ import static java.util.Collections.singletonMap;
 
 @Service
 public class ProfileService {
-
-  private static final String KEY = "users";
 
   private final TelegramBot bot;
 
@@ -49,9 +46,9 @@ public class ProfileService {
             new InlineKeyboardButton("Gender")
                 .callbackData("/profile/match/gender"),
             new InlineKeyboardButton("Min age")
-                .callbackData("/profile/match/age/from"),
+                .callbackData("/profile/match/age/min"),
             new InlineKeyboardButton("Max age")
-                .callbackData("/profile/match/age/to")
+                .callbackData("/profile/match/age/max")
         },
         new InlineKeyboardButton[] {
             new InlineKeyboardButton("No more changes needed")
@@ -59,7 +56,7 @@ public class ProfileService {
         }
     );
     Long chatId = update.callbackQuery().message().chat().id();
-    return commands.hgetall(key(update.callbackQuery().from().id()))
+    return commands.hgetall(RedisKeys.user(update.callbackQuery().from().id()))
         .map(profile -> {
           String message = profile.isEmpty()
               ? "Your profile appears to be blank, tap these buttons to fill it!"
@@ -71,22 +68,10 @@ public class ProfileService {
         }).then();
   }
 
-  private String key(Integer userId) {
-    return KEY + ":" + userId.toString();
-  }
-
-  public Mono<Void> askAge(Update update) {
-    CallbackQuery callbackQuery = update.callbackQuery();
-    return sessionService.set(callbackQuery.from().id().toString(), Step.SET_MY_AGE)
-        .thenReturn(new SendMessage(callbackQuery.message().chat().id(), "So, what's your age?"))
-        .map(bot::execute)
-        .then();
-  }
-
   public Mono<Void> setAge(Update update) {
     Message message = update.message();
     String age = message.text();
-    return commands.hmset(key(message.from().id()), singletonMap("age", age))
+    return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("age", age))
         .thenReturn(new SendMessage(message.chat().id(), String.format("Okay, your age is %s", age)))
         .map(bot::execute)
         .then();
@@ -97,5 +82,13 @@ public class ProfileService {
         .thenReturn(new SendMessage(update.message().chat().id(), "Your location is updated"))
         .map(bot::execute)
         .then();
+  }
+
+  public Mono<Void> setMatchGender(Update update) {
+    return null;
+  }
+
+  public Mono<Void> setGender(Update gender) {
+    return null;
   }
 }

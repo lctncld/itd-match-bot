@@ -1,6 +1,7 @@
 package com.epam.match;
 
 import com.epam.match.service.ProfileService;
+import com.epam.match.service.QuestionService;
 import com.epam.match.service.SessionService;
 import com.epam.match.service.StubService;
 import com.pengrad.telegrambot.model.CallbackQuery;
@@ -17,12 +18,16 @@ public class TelegramUpdateRouter {
 
   private final ProfileService profileService;
 
+  private final QuestionService questionService;
+
   private final StubService stubService;
 
   private final SessionService sessionService;
 
-  public TelegramUpdateRouter(ProfileService profileService, StubService stubService, SessionService sessionService) {
+  public TelegramUpdateRouter(ProfileService profileService, QuestionService questionService, StubService stubService,
+      SessionService sessionService) {
     this.profileService = profileService;
+    this.questionService = questionService;
     this.stubService = stubService;
     this.sessionService = sessionService;
   }
@@ -50,8 +55,23 @@ public class TelegramUpdateRouter {
         return stubService.overview(update);
       case "/register":
         return profileService.setupProfile(update);
+      case "/profile/me/gender":
+        return questionService.askGender(update);
+      case "/profile/me/gender/male":
+      case "/profile/me/gender/female":
+        return profileService.setGender(update);
       case "/profile/me/age":
-        return profileService.askAge(update);
+        return questionService.askAge(update);
+      case "/profile/match/gender":
+        return questionService.askMatchGender(update);
+      case "/profile/match/gender/male":
+      case "/profile/match/gender/female":
+      case "/profile/match/gender/both":
+        return profileService.setMatchGender(update);
+      case "/profile/match/age/min":
+        return questionService.askMatchMinAge(update);
+      case "/profile/match/age/max":
+        return questionService.askMatchMaxAge(update);
       case "/location":
         return profileService.setLocation(update);
       default:
