@@ -36,14 +36,13 @@ public class MessageService {
   }
 
   public Mono<Void> help(Update update) {
+    Long chatId = update.message().chat().id();
     return Mono.just(
-        new SendMessage(update.message().chat().id(), "Hi! What do you wanna do?")
+        new SendMessage(chatId, "Hi! Type /profile to set up your profile, or try a button below!")
             .replyMarkup(new InlineKeyboardMarkup(
                 new InlineKeyboardButton[] {
                     new InlineKeyboardButton("What is This?")
                         .callbackData("/overview"),
-                    new InlineKeyboardButton("Get In")
-                        .callbackData("/profile")
                 })
             )
     ).map(bot::execute)

@@ -62,19 +62,16 @@ public class ProfileService {
   }
 
   public Mono<Void> setupProfile(Update update) {
-    CallbackQuery cb = update.callbackQuery(); //FIXME extract props outside for command to work outside of callback
-    Long chatId = cb.message().chat().id();
-    return commands.hgetall(RedisKeys.user(cb.from().id())) //FIXME unchecked assignment
+    Message message = update.message();
+    return commands.hgetall(RedisKeys.user(message.from().id())) //FIXME unchecked assignment
         .map(profile -> {
-          String message = profile.isEmpty()
+          String info = profile.isEmpty()
               ? "Your profile appears to be blank, tap these buttons to fill it!"
               : "So, your settings are:\n" + profile.entrySet().stream()
                   .map(entry -> entry.getKey() + ": " + entry.getValue())
                   .collect(Collectors.joining(", "));
-          return profileMenu(chatId, message);
+          return profileMenu(message.chat().id(), info);
         })
-        .cast(BaseRequest.class)
-        .concatWith(Mono.just(new AnswerCallbackQuery(cb.id())))
         .map(bot::execute)
         .then();
   }
