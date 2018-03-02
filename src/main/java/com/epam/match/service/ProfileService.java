@@ -4,14 +4,18 @@ import com.epam.match.RedisKeys;
 import com.epam.match.domain.Gender;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.CallbackQuery;
+import com.pengrad.telegrambot.model.Contact;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
+import com.pengrad.telegrambot.model.request.KeyboardButton;
+import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -20,6 +24,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonMap;
 
+@Slf4j
 @Service
 public class ProfileService {
 
@@ -29,11 +34,14 @@ public class ProfileService {
 
   private final LocationService locationService;
 
+  private final SessionService sessionService;
+
   public ProfileService(TelegramBot bot, RedisReactiveCommands<String, String> commands,
-      LocationService locationService) {
+      LocationService locationService, SessionService sessionService) {
     this.bot = bot;
     this.commands = commands;
     this.locationService = locationService;
+    this.sessionService = sessionService;
   }
 
   private SendMessage profileMenu(Long chatId, String message) {
@@ -63,8 +71,18 @@ public class ProfileService {
 
   public Mono<Void> setupProfile(Update update) {
     Message message = update.message();
-    return getProfileAsString(message.from().id())
+    Integer userId = message.from().id();
+    return commands.hget(RedisKeys.user(update.message().from().id()), "phone")
+        .single()
+        .then(getProfileAsString(userId))
         .map(profile -> profileMenu(message.chat().id(), profile))
+        .onErrorReturn(new SendMessage(message.chat().id(), "Share your phone number first!")
+            .replyMarkup(new ReplyKeyboardMarkup(new KeyboardButton[] {
+                new KeyboardButton("Share phone")
+                    .requestContact(true) })
+                .oneTimeKeyboard(true)
+                .resizeKeyboard(true))
+        )
         .map(bot::execute)
         .then();
   }
@@ -111,7 +129,6 @@ public class ProfileService {
             profileMenu(chatId, "Anything else?")
         )).map(bot::execute)
         .then();
-
   }
 
   public Mono<Void> setGender(Update update, Gender gender) {
@@ -159,6 +176,18 @@ public class ProfileService {
             new AnswerCallbackQuery(cb.id()),
             new DeleteMessage(chatId, cb.message().messageId())
         )).map(bot::execute)
+        .then();
+  }
+
+  public Mono<Void> setContact(Update update) {
+    Message message = update.message();
+    Contact contact = message.contact();
+    if (!contact.userId().equals(message.from().id())) {
+      log.info("I don't believe you");
+    }
+    return commands.hmset(RedisKeys.user(update.message().from().id()), singletonMap("phone", contact.phoneNumber()))
+        .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
+        .map(bot::execute)
         .then();
   }
 }

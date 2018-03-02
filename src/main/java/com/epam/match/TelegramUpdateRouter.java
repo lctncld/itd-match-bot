@@ -6,6 +6,7 @@ import com.epam.match.service.ProfileService;
 import com.epam.match.service.QuestionService;
 import com.epam.match.service.SessionService;
 import com.pengrad.telegrambot.model.CallbackQuery;
+import com.pengrad.telegrambot.model.Contact;
 import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
@@ -86,6 +87,8 @@ public class TelegramUpdateRouter {
         return profileService.leaveProfileConfiguration(update);
       case "/location":
         return profileService.setLocation(update);
+      case "/contact":
+        return profileService.setContact(update);
       default:
         return messageService.unknownCommand(update);
     }
@@ -109,6 +112,10 @@ public class TelegramUpdateRouter {
       Location location = message.location();
       if (location != null) {
         return "/location";
+      }
+      Contact contact = message.contact();
+      if (contact != null) {
+        return "/contact";
       }
     }
     return null;

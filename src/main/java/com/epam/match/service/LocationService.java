@@ -14,8 +14,11 @@ public class LocationService {
 
   private final RedisReactiveCommands<String, String> commands;
 
-  public LocationService(RedisReactiveCommands<String, String> commands) {
+  private final NotificationService notificationService;
+
+  public LocationService(RedisReactiveCommands<String, String> commands, NotificationService notificationService) {
     this.commands = commands;
+    this.notificationService = notificationService;
   }
 
   public Mono<Void> set(String userId, Location location) {
@@ -31,11 +34,11 @@ public class LocationService {
         userId,
         10,
         GeoArgs.Unit.km
-    )).filter(user -> !user.equals(userId))
-        .doOnNext(user -> {
-          log.info("Found user {} near {}", user, userId);
-          // TODO: Notify them
-        })
+    )).filter(user -> user.equals(userId))
+        .doOnNext(user -> log.info("Found user {} near {}", user, userId))
+        .map(user -> notificationService.notify(Integer.valueOf(user), Integer.valueOf(userId)).subscribe()) //TODO ?
         .then();
   }
+
+
 }
