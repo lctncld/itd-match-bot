@@ -39,7 +39,7 @@ public class TelegramUpdateRouter {
     String command = command(update);
     if (command == null) {
       Integer userId = update.message().from().id();
-      return sessionService.get(userId.toString())
+      return sessionService.get(userId)
           .flatMap(step -> {
             switch (step) {
               case SET_MY_AGE:
@@ -53,7 +53,7 @@ public class TelegramUpdateRouter {
                 return messageService.unknownCommand(update);
             }
           })
-          .then(sessionService.clear(userId.toString()));
+          .then(sessionService.clear(userId));
     }
     switch (command) {
       case "/help":

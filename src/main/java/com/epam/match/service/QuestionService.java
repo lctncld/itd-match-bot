@@ -47,7 +47,7 @@ public class QuestionService {
   public Mono<Void> askAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return session.set(cb.from().id().toString(), Step.SET_MY_AGE)
+    return session.set(cb.from().id(), Step.SET_MY_AGE)
         .thenMany(Flux.just(
             new AnswerCallbackQuery(cb.id()),
             new SendMessage(chatId, "So, what's your age?"),
@@ -79,9 +79,8 @@ public class QuestionService {
 
   public Mono<Void> askMatchMinAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
-    String user = cb.from().id().toString();
     Long chatId = cb.message().chat().id();
-    return session.set(user, Step.SET_MATCH_MIN_AGE)
+    return session.set(cb.from().id(), Step.SET_MATCH_MIN_AGE)
         .thenMany(Flux.just(
             new AnswerCallbackQuery(cb.id()),
             new SendMessage(chatId, "Send me min age"),
@@ -92,9 +91,8 @@ public class QuestionService {
 
   public Mono<Void> askMatchMaxAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
-    String user = cb.from().id().toString();
     Long chatId = cb.message().chat().id();
-    return session.set(user, Step.SET_MATCH_MAX_AGE)
+    return session.set(cb.from().id(), Step.SET_MATCH_MAX_AGE)
         .thenMany(Flux.just(
             new AnswerCallbackQuery(cb.id()),
             new SendMessage(chatId, "And the max age is?"),
