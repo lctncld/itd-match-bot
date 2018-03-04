@@ -72,7 +72,7 @@ public class ProfileService {
   public Mono<Void> setupProfile(Update update) {
     Message message = update.message();
     Integer userId = message.from().id();
-    return commands.hget(RedisKeys.user(update.message().from().id()), "phone")
+    return commands.get(RedisKeys.phone(update.message().from().id()))
         .single()
         .then(getProfileAsString(userId))
         .map(profile -> profileMenu(message.chat().id(), profile))
@@ -185,7 +185,7 @@ public class ProfileService {
     if (!contact.userId().equals(message.from().id())) {
       log.info("I don't believe you");
     }
-    return commands.hmset(RedisKeys.user(update.message().from().id()), singletonMap("phone", contact.phoneNumber()))
+    return commands.set(RedisKeys.phone(update.message().from().id()), contact.phoneNumber())
         .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
         .map(bot::execute)
         .then();

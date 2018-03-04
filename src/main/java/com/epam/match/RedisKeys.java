@@ -13,4 +13,8 @@ public final class RedisKeys {
   public static String locations() {
     return "locations";
   }
+
+  public static String phone(Integer id) {
+    return "phone:" + id.toString();
+  }
 }
