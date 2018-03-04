@@ -22,12 +22,13 @@ public class LocationService {
   }
 
   public Mono<Void> set(String userId, Location location) {
-    Float latitude = location.latitude();
-    Float longitude = location.longitude();
+    if (location == null) {
+      return Mono.error(new RuntimeException("Location is null"));
+    }
     return commands.geoadd(
         RedisKeys.locations(),
-        latitude,
-        longitude,
+        location.latitude(),
+        location.longitude(),
         userId
     ).thenMany(commands.georadiusbymember(
         RedisKeys.locations(),

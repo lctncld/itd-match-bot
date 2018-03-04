@@ -115,7 +115,9 @@ public class ProfileService {
     return locationService.set(message.from().id().toString(), message.location())
         .thenMany(Flux.just(
             new SendMessage(chatId, "Your location is updated, I'll let others know")
-        )).map(bot::execute)
+        ))
+        .onErrorReturn(new SendMessage(chatId, "Something went wrong"))
+        .map(bot::execute)
         .then();
   }
 
