@@ -184,8 +184,10 @@ public class ProfileService {
   public Mono<Void> setContact(Update update) {
     Message message = update.message();
     Contact contact = message.contact();
-    if (!contact.userId().equals(message.from().id())) {
-      log.info("I don't believe you");
+    if (contact.userId() == null || !contact.userId().equals(message.from().id())) {
+      return Mono.just(new SendMessage(message.chat().id(), "I don't believe you"))
+          .map(bot::execute)
+          .then();
     }
     return commands.set(RedisKeys.phone(update.message().from().id()), contact.phoneNumber())
         .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
