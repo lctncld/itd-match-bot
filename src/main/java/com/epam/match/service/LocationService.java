@@ -6,6 +6,7 @@ import io.lettuce.core.GeoArgs;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
@@ -14,11 +15,8 @@ public class LocationService {
 
   private final RedisReactiveCommands<String, String> commands;
 
-  private final NotificationService notificationService;
-
-  public LocationService(RedisReactiveCommands<String, String> commands, NotificationService notificationService) {
+  public LocationService(RedisReactiveCommands<String, String> commands) {
     this.commands = commands;
-    this.notificationService = notificationService;
   }
 
   public Mono<Void> set(String userId, Location location) {
@@ -30,16 +28,19 @@ public class LocationService {
         location.latitude(),
         location.longitude(),
         userId
-    ).thenMany(commands.georadiusbymember(
+    ).then();
+  }
+
+  public Flux<String> get(String userId) {
+    return commands.georadiusbymember(
         RedisKeys.locations(),
         userId,
         10,
         GeoArgs.Unit.km
-    )).filter(user -> user.equals(userId))
-        .doOnNext(user -> log.info("Found user {} near {}", user, userId))
-        .map(user -> notificationService.notify(Integer.valueOf(user), Integer.valueOf(userId)).subscribe()) //TODO ?
-        .then();
-  }
+    )
+        .filter(user -> !user.equals(userId))
+        .doOnNext(user -> log.info("Found user {} near {}", user, userId));
 
+  }
 
 }

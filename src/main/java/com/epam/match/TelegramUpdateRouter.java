@@ -1,6 +1,7 @@
 package com.epam.match;
 
 import com.epam.match.domain.Gender;
+import com.epam.match.service.MatchService;
 import com.epam.match.service.MessageService;
 import com.epam.match.service.ProfileService;
 import com.epam.match.service.QuestionService;
@@ -9,6 +10,7 @@ import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Contact;
 import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -26,13 +28,16 @@ public class TelegramUpdateRouter {
 
   private final SessionService sessionService;
 
+  private final MatchService matchService;
+
   public TelegramUpdateRouter(ProfileService profileService, QuestionService questionService,
       MessageService messageService,
-      SessionService sessionService) {
+      SessionService sessionService, MatchService matchService) {
     this.profileService = profileService;
     this.questionService = questionService;
     this.messageService = messageService;
     this.sessionService = sessionService;
+    this.matchService = matchService;
   }
 
   public Mono<?> route(Update update) {
@@ -89,6 +94,10 @@ public class TelegramUpdateRouter {
         return profileService.setLocation(update);
       case "/contact":
         return profileService.setContact(update);
+      case "/photo":
+        return profileService.setImage(update);
+      case "/roll":
+        return matchService.next(update);
       default:
         return messageService.unknownCommand(update);
     }
@@ -116,6 +125,10 @@ public class TelegramUpdateRouter {
       Contact contact = message.contact();
       if (contact != null) {
         return "/contact";
+      }
+      PhotoSize[] photo = message.photo();
+      if (photo != null && photo.length > 0) {
+        return "/photo";
       }
     }
     return null;

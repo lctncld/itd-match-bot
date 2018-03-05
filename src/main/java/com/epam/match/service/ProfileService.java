@@ -6,6 +6,7 @@ import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Contact;
 import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
@@ -74,6 +75,7 @@ public class ProfileService {
     Integer userId = message.from().id();
     return commands.get(RedisKeys.phone(update.message().from().id()))
         .single()
+        .then()
         .then(getProfileAsString(userId))
         .map(profile -> profileMenu(message.chat().id(), profile))
         .onErrorReturn(new SendMessage(message.chat().id(), "Share your phone number first!")
@@ -191,6 +193,16 @@ public class ProfileService {
     }
     return commands.set(RedisKeys.phone(update.message().from().id()), contact.phoneNumber())
         .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
+        .map(bot::execute)
+        .then();
+  }
+
+  public Mono<Void> setImage(Update update) {
+    Message message = update.message();
+    PhotoSize photo = message.photo()[0];
+    String photoId = photo.fileId();
+    return commands.set(RedisKeys.image(message.from().id()), photoId)
+        .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"))
         .map(bot::execute)
         .then();
   }
