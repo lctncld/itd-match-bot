@@ -97,7 +97,7 @@ public class TelegramUpdateRouter {
       case "/photo":
         return profileService.setImage(update);
       case "/roll":
-        return matchService.next(update);
+        return matchService.suggest(update);
       default:
         String prefix = command.split("/")[1];
         switch (prefix) {
