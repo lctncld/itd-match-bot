@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonMap;
@@ -71,7 +72,7 @@ public class ProfileService {
   public Mono<Void> setupProfile(Update update) {
     Message message = update.message();
     Integer userId = message.from().id();
-    return commands.get(RedisKeys.phone(update.message().from().id()))
+    return commands.get(RedisKeys.Contact.phone(update.message().from().id()))
         .single()
         .then()
         .then(getProfileAsString(userId))
@@ -189,7 +190,16 @@ public class ProfileService {
           .map(bot::execute)
           .then();
     }
-    return commands.set(RedisKeys.phone(update.message().from().id()), contact.phoneNumber())
+
+    Integer id = update.message().from().id();
+    return commands.msetnx(
+        new HashMap<String, String>() {{
+          put(RedisKeys.Contact.phone(id), contact.phoneNumber());
+          put(RedisKeys.Contact.firstName(id), contact.firstName());
+          put(RedisKeys.Contact.lastName(id), contact.lastName());
+          put(RedisKeys.Contact.chatId(id), message.chat().id().toString());
+        }}
+    )
         .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
         .map(bot::execute)
         .then();

@@ -10,8 +10,10 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
+import com.pengrad.telegrambot.request.SendContact;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
+import io.lettuce.core.KeyValue;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,14 +90,28 @@ public class MatchService {
   public Mono<Void> like(Update update) {
     CallbackQuery cb = update.callbackQuery();
     String matchId = getMatchIdFromCommand(cb.data());
+    Long chatId = cb.message().chat().id();
     return commands.sadd(RedisKeys.likes(cb.from().id()), matchId)
         .thenMany(Flux.just(
             new AnswerCallbackQuery(cb.id()),
-            new EditMessageReplyMarkup(cb.message().chat().id(), cb.message().messageId())
+            new EditMessageReplyMarkup(chatId, cb.message().messageId())
                 .replyMarkup(new InlineKeyboardMarkup())
         ))
         .map(bot::execute)
-        .then(suggestFromCallback(update));
+        .then(commands.sismember(RedisKeys.likes(matchId), cb.from().id().toString()))
+        .filter(Boolean::new)
+        .flatMap(done -> commands.mget(RedisKeys.contact(matchId))
+            .collectMap(KeyValue::getKey, KeyValue::getValue)
+        )
+        .map(details -> { // TODO: flatMapMany contact to other party too
+          String phone = RedisKeys.Contact.phone(matchId);
+          String firstName = RedisKeys.Contact.firstName(matchId);
+          String lastName = RedisKeys.Contact.lastName(matchId);
+          return new SendContact(chatId, details.get(phone), details.get(firstName)).lastName(details.get(lastName));
+        })
+        .map(bot::execute)
+        .then(suggestFromCallback(update))
+        .then();
   }
 
   private String getMatchIdFromCommand(String command) {
