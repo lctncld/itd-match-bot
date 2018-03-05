@@ -99,7 +99,16 @@ public class TelegramUpdateRouter {
       case "/roll":
         return matchService.next(update);
       default:
-        return messageService.unknownCommand(update);
+        String prefix = command.split("/")[1];
+        switch (prefix) {
+          case "like":
+            return matchService.like(update);
+          case "dislike":
+            return matchService.dislike(update);
+          default:
+            return messageService.unknownCommand(update);
+        }
+
     }
   }
 
