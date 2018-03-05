@@ -3,18 +3,16 @@ package com.epam.match.service;
 import com.epam.match.RedisKeys;
 import com.epam.match.domain.Gender;
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.CallbackQuery;
-import com.pengrad.telegrambot.model.Contact;
-import com.pengrad.telegrambot.model.Message;
-import com.pengrad.telegrambot.model.PhotoSize;
-import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.*;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.KeyboardButton;
 import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
+import com.pengrad.telegrambot.request.GetUserProfilePhotos;
 import com.pengrad.telegrambot.request.SendMessage;
+import com.pengrad.telegrambot.response.GetUserProfilePhotosResponse;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -205,8 +203,23 @@ public class ProfileService {
         put(RedisKeys.Contact.chatId(id), message.chat().id().toString());
       }}
     )
+      .then(setDefaultImage(id))
       .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
       .map(bot::execute)
+      .then();
+  }
+
+  public Mono<Void> setDefaultImage(Integer userId) {
+    return Mono.just(userId)
+      .map(GetUserProfilePhotos::new)
+      .map(bot::execute)
+      .map(GetUserProfilePhotosResponse::photos)
+      .filter(p -> p.totalCount() > 0)
+      .map(UserProfilePhotos::photos)
+      .map(p -> p[0]) // Cool
+      .map(p -> p[0]) // API
+      .map(PhotoSize::fileId)
+      .flatMap(image -> commands.set(RedisKeys.image(userId), image))
       .then();
   }
 
