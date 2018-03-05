@@ -12,13 +12,15 @@ import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-@Slf4j
 @Component
 public class TelegramUpdateRouter {
+
+  private final Logger log = LoggerFactory.getLogger(TelegramUpdateRouter.class);
 
   private final ProfileService profileService;
 

@@ -4,14 +4,16 @@ import com.epam.match.RedisKeys;
 import com.pengrad.telegrambot.model.Location;
 import io.lettuce.core.GeoArgs;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-@Slf4j
 public class LocationService {
+
+  private final Logger log = LoggerFactory.getLogger(LocationService.class);
 
   private final RedisReactiveCommands<String, String> commands;
 

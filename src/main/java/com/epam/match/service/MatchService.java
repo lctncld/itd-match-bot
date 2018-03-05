@@ -13,7 +13,8 @@ import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -22,9 +23,10 @@ import reactor.util.function.Tuples;
 
 import java.util.function.Function;
 
-@Slf4j
 @Service
 public class MatchService {
+
+  private final Logger log = LoggerFactory.getLogger(MatchService.class);
 
   private final RedisReactiveCommands<String, String> commands;
 

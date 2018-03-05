@@ -16,7 +16,6 @@ import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -25,7 +24,6 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singletonMap;
 
-@Slf4j
 @Service
 public class ProfileService {
 
