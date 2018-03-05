@@ -6,12 +6,7 @@ import com.epam.match.service.MessageService;
 import com.epam.match.service.ProfileService;
 import com.epam.match.service.QuestionService;
 import com.epam.match.service.SessionService;
-import com.pengrad.telegrambot.model.CallbackQuery;
-import com.pengrad.telegrambot.model.Contact;
-import com.pengrad.telegrambot.model.Location;
-import com.pengrad.telegrambot.model.Message;
-import com.pengrad.telegrambot.model.PhotoSize;
-import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -33,8 +28,8 @@ public class TelegramUpdateRouter {
   private final MatchService matchService;
 
   public TelegramUpdateRouter(ProfileService profileService, QuestionService questionService,
-      MessageService messageService,
-      SessionService sessionService, MatchService matchService) {
+    MessageService messageService,
+    SessionService sessionService, MatchService matchService) {
     this.profileService = profileService;
     this.questionService = questionService;
     this.messageService = messageService;
@@ -47,20 +42,20 @@ public class TelegramUpdateRouter {
     if (command == null) {
       Integer userId = update.message().from().id();
       return sessionService.get(userId)
-          .flatMap(step -> {
-            switch (step) {
-              case SET_MY_AGE:
-                return profileService.setAge(update);
-              case SET_MATCH_MIN_AGE:
-                return profileService.setMatchMinAge(update);
-              case SET_MATCH_MAX_AGE:
-                return profileService.setMatchMaxAge(update);
-              case UNKNOWN:
-              default:
-                return messageService.unknownCommand(update);
-            }
-          })
-          .then(sessionService.clear(userId));
+        .flatMap(step -> {
+          switch (step) {
+            case SET_MY_AGE:
+              return profileService.setAge(update);
+            case SET_MATCH_MIN_AGE:
+              return profileService.setMatchMinAge(update);
+            case SET_MATCH_MAX_AGE:
+              return profileService.setMatchMaxAge(update);
+            case UNKNOWN:
+            default:
+              return messageService.unknownCommand(update);
+          }
+        })
+        .then(sessionService.clear(userId));
     }
     switch (command) {
       case "/help":
@@ -110,7 +105,6 @@ public class TelegramUpdateRouter {
           default:
             return messageService.unknownCommand(update);
         }
-
     }
   }
 
@@ -151,6 +145,8 @@ public class TelegramUpdateRouter {
     if (!isCommand) {
       log.info("String {} is not a command", text);
     }
-    return isCommand ? text : null;
+    return isCommand
+      ? text
+      : null;
   }
 }

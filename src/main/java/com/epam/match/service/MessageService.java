@@ -26,32 +26,35 @@ public class MessageService {
       message = update.callbackQuery().message();
     }
     return Mono.just(
-        new SendMessage(message.chat().id(),
-            String.format("Unrecognized command \"%s\". Try asking for /help", message.text()))
-            .replyMarkup(new ReplyKeyboardRemove())
-    ).map(bot::execute)
-        .then();
+      new SendMessage(message.chat().id(),
+        String.format("Unrecognized command \"%s\". Try asking for /help", message.text())
+      ).replyMarkup(new ReplyKeyboardRemove())
+    )
+      .map(bot::execute)
+      .then();
   }
 
   public Mono<Void> help(Update update) {
     Long chatId = update.message().chat().id();
     return Mono.just(
-        new SendMessage(chatId, "Hi! Type /profile to set up your profile, or try a button below!")
-            .replyMarkup(new InlineKeyboardMarkup(
-                new InlineKeyboardButton[] {
-                    new InlineKeyboardButton("What is This?")
-                        .callbackData("/overview"),
-                })
-            )
-    ).map(bot::execute)
-        .then();
+      new SendMessage(chatId, "Hi! Type /profile to set up your profile, or try a button below!").replyMarkup(
+        new InlineKeyboardMarkup(
+          new InlineKeyboardButton[] {
+            new InlineKeyboardButton("What is This?")
+              .callbackData("/overview"),
+          })
+      )
+    )
+      .map(bot::execute)
+      .then();
   }
 
   public Mono<Void> overview(Update update) {
     return Mono.just(
-        new AnswerCallbackQuery(update.callbackQuery().id())
-            .text("This is just a Demo! Try another button")
-    ).map(bot::execute)
-        .then();
+      new AnswerCallbackQuery(update.callbackQuery().id())
+        .text("This is just a Demo! Try another button")
+    )
+      .map(bot::execute)
+      .then();
   }
 }

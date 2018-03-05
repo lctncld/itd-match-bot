@@ -21,11 +21,11 @@ public class TelegramWebhookHandler {
 
   public Mono<ServerResponse> route(ServerRequest request) {
     return request.bodyToMono(String.class)
-        .doOnNext(log::info)
-        .map(BotUtils::parseUpdate)
-        .map(router::route)
-        .map(Mono::subscribe)
-        .log()
-        .then(ServerResponse.ok().build());
+      .doOnNext(log::info)
+      .map(BotUtils::parseUpdate)
+      .map(router::route)
+      .map(Mono::subscribe)
+      .log()
+      .then(ServerResponse.ok().build());
   }
 }

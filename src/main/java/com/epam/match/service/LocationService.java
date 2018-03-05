@@ -26,23 +26,22 @@ public class LocationService {
       return Mono.error(new RuntimeException("Location is null"));
     }
     return commands.geoadd(
-        RedisKeys.locations(),
-        location.latitude(),
-        location.longitude(),
-        userId
-    ).then();
+      RedisKeys.locations(),
+      location.latitude(),
+      location.longitude(),
+      userId
+    )
+      .then();
   }
 
   public Flux<String> get(String userId) {
     return commands.georadiusbymember(
-        RedisKeys.locations(),
-        userId,
-        10,
-        GeoArgs.Unit.km
+      RedisKeys.locations(),
+      userId,
+      10,
+      GeoArgs.Unit.km
     )
-        .filter(user -> !user.equals(userId))
-        .doOnNext(user -> log.info("Found user {} near {}", user, userId));
-
+      .filter(user -> !user.equals(userId))
+      .doOnNext(user -> log.info("Found user {} near {}", user, userId));
   }
-
 }

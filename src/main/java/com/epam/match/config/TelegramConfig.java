@@ -27,7 +27,7 @@ public class TelegramConfig {
     log.info("setWebhook {}", res);
     if (!res.isOk()) {
       throw new RuntimeException(
-          String.format("Failed to create TelegramBot: %s %s", res.errorCode(), res.description()));
+        String.format("Failed to create TelegramBot: %s %s", res.errorCode(), res.description()));
     }
     return bot;
   }

@@ -29,75 +29,80 @@ public class QuestionService {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return Flux.just(
-        new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, "Who are you?")
-            .replyMarkup(new InlineKeyboardMarkup(
-                new InlineKeyboardButton[] {
-                    new InlineKeyboardButton("M")
-                        .callbackData("/profile/me/gender/male"),
-                    new InlineKeyboardButton("F")
-                        .callbackData("/profile/me/gender/female")
-                }
-            )),
-        new DeleteMessage(chatId, cb.message().messageId())
-    ).map(bot::execute)
-        .then();
+      new AnswerCallbackQuery(cb.id()),
+      new SendMessage(chatId, "Who are you?")
+        .replyMarkup(new InlineKeyboardMarkup(
+          new InlineKeyboardButton[] {
+            new InlineKeyboardButton("M")
+              .callbackData("/profile/me/gender/male"),
+            new InlineKeyboardButton("F")
+              .callbackData("/profile/me/gender/female")
+          }
+        )),
+      new DeleteMessage(chatId, cb.message().messageId())
+    )
+      .map(bot::execute)
+      .then();
   }
 
   public Mono<Void> askAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return session.set(cb.from().id(), Step.SET_MY_AGE)
-        .thenMany(Flux.just(
-            new AnswerCallbackQuery(cb.id()),
-            new SendMessage(chatId, "So, what's your age?"),
-            new DeleteMessage(chatId, cb.message().messageId())
-        )).map(bot::execute)
-        .then();
+      .thenMany(Flux.just(
+        new AnswerCallbackQuery(cb.id()),
+        new SendMessage(chatId, "So, what's your age?"),
+        new DeleteMessage(chatId, cb.message().messageId())
+      ))
+      .map(bot::execute)
+      .then();
   }
 
   public Mono<Void> askMatchGender(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return Flux.just(
-        new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, "Who do you wanna find?")
-            .replyMarkup(new InlineKeyboardMarkup(
-                new InlineKeyboardButton[] {
-                    new InlineKeyboardButton("M")
-                        .callbackData("/profile/match/gender/male"),
-                    new InlineKeyboardButton("F")
-                        .callbackData("/profile/match/gender/female"),
-                    new InlineKeyboardButton("Both")
-                        .callbackData("/profile/match/gender/both")
-                })
-            ),
-        new DeleteMessage(chatId, cb.message().messageId())
-    ).map(bot::execute)
-        .then();
+      new AnswerCallbackQuery(cb.id()),
+      new SendMessage(chatId, "Who do you wanna find?")
+        .replyMarkup(new InlineKeyboardMarkup(
+          new InlineKeyboardButton[] {
+            new InlineKeyboardButton("M")
+              .callbackData("/profile/match/gender/male"),
+            new InlineKeyboardButton("F")
+              .callbackData("/profile/match/gender/female"),
+            new InlineKeyboardButton("Both")
+              .callbackData("/profile/match/gender/both")
+          })
+        ),
+      new DeleteMessage(chatId, cb.message().messageId())
+    )
+      .map(bot::execute)
+      .then();
   }
 
   public Mono<Void> askMatchMinAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return session.set(cb.from().id(), Step.SET_MATCH_MIN_AGE)
-        .thenMany(Flux.just(
-            new AnswerCallbackQuery(cb.id()),
-            new SendMessage(chatId, "Send me min age"),
-            new DeleteMessage(chatId, cb.message().messageId())
-        )).map(bot::execute)
-        .then();
+      .thenMany(Flux.just(
+        new AnswerCallbackQuery(cb.id()),
+        new SendMessage(chatId, "Send me min age"),
+        new DeleteMessage(chatId, cb.message().messageId())
+      ))
+      .map(bot::execute)
+      .then();
   }
 
   public Mono<Void> askMatchMaxAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return session.set(cb.from().id(), Step.SET_MATCH_MAX_AGE)
-        .thenMany(Flux.just(
-            new AnswerCallbackQuery(cb.id()),
-            new SendMessage(chatId, "And the max age is?"),
-            new DeleteMessage(chatId, cb.message().messageId())
-        )).map(bot::execute)
-        .then();
+      .thenMany(Flux.just(
+        new AnswerCallbackQuery(cb.id()),
+        new SendMessage(chatId, "And the max age is?"),
+        new DeleteMessage(chatId, cb.message().messageId())
+      ))
+      .map(bot::execute)
+      .then();
   }
 }

@@ -18,12 +18,12 @@ public class MatchApplication {
   @Autowired
   private TelegramWebhookHandler telegramHandler;
 
+  public static void main(String[] args) {
+    SpringApplication.run(MatchApplication.class, args);
+  }
+
   @Bean
   public RouterFunction<ServerResponse> router() {
     return route(POST("/").and(accept(APPLICATION_JSON)), telegramHandler::route);
-  }
-
-  public static void main(String[] args) {
-    SpringApplication.run(MatchApplication.class, args);
   }
 }
