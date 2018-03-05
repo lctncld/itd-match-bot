@@ -3,11 +3,11 @@ package com.epam.match;
 public final class RedisKeys {
 
   public static String user(Integer id) {
-    return "users:" + id.toString();
+    return id.toString() + ":profile";
   }
 
   public static String session(Integer id) {
-    return "session:" + id.toString();
+    return id.toString() + ":session";
   }
 
   public static String locations() {
@@ -15,6 +15,6 @@ public final class RedisKeys {
   }
 
   public static String phone(Integer id) {
-    return "phone:" + id.toString();
+    return id.toString() + ":phone";
   }
 }
