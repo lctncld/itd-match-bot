@@ -6,19 +6,27 @@ One day, one day...
 
 ## Technologies
 
-- Java 8
-- Spring Boot 2
-- Spring WebFlux (Netty web server)
-- Redis
+- Java 9
+- Spring Boot
+- Reactor
+- Redis, with [Lettuce](https://lettuce.io/core/release/reference/)
 - [java-telegram-bot-api](https://github.com/pengrad/java-telegram-bot-api)
 - [ngrok](https://ngrok.com/)
 
 ## Database Structure
 
 Redis KEYs:
-- users (HASH user_id -> ...profile params)
-- locations (SORTEDSET lat, lon -> user_id)
-- session (HASH user_id -> current_step)
+- user_id:profile
+- user_id:image
+- user_id:likes
+- user_id:dislikes
+- user_id:session
+- user_id:contact:* - namespace with sensitive data
+    * user_id:contact:phone
+    * user_id:contact:first_name
+    * user_id:contact:last_name
+    * user_id:contact:chat_id
+- locations
 
 ## Development guidelines
 
