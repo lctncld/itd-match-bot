@@ -6,7 +6,12 @@ import com.epam.match.service.MessageService;
 import com.epam.match.service.ProfileService;
 import com.epam.match.service.QuestionService;
 import com.epam.match.service.SessionService;
-import com.pengrad.telegrambot.model.*;
+import com.pengrad.telegrambot.model.CallbackQuery;
+import com.pengrad.telegrambot.model.Contact;
+import com.pengrad.telegrambot.model.Location;
+import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
+import com.pengrad.telegrambot.model.Update;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -54,8 +59,7 @@ public class TelegramUpdateRouter {
             default:
               return messageService.unknownCommand(update);
           }
-        })
-        .then(sessionService.clear(userId));
+        });
     }
     switch (command) {
       case "/help":

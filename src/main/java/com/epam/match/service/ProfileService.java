@@ -3,7 +3,12 @@ package com.epam.match.service;
 import com.epam.match.RedisKeys;
 import com.epam.match.domain.Gender;
 import com.pengrad.telegrambot.TelegramBot;
-import com.pengrad.telegrambot.model.*;
+import com.pengrad.telegrambot.model.CallbackQuery;
+import com.pengrad.telegrambot.model.Contact;
+import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
+import com.pengrad.telegrambot.model.Update;
+import com.pengrad.telegrambot.model.UserProfilePhotos;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.KeyboardButton;
@@ -98,13 +103,14 @@ public class ProfileService {
 
   public Mono<Void> setAge(Update update) {
     Message message = update.message();
-    String age = message.text();
     Long chatId = message.chat().id();
-    return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("age", age))
-      .thenMany(Flux.just(
-        new SendMessage(chatId, String.format("Okay, your age is %s", age)),
-        profileMenu(chatId, "Anything else?")
-      ))
+    Integer userId = message.from().id();
+    return Mono.just(message.text())
+      .map(Integer::valueOf)
+      .flatMap(age -> commands.hmset(RedisKeys.user(userId), singletonMap("age", age.toString())))
+      .then(clearSession(userId))
+      .thenReturn(profileMenu(chatId, "Anything else?"))
+      .onErrorReturn(ageValidationFailMessage(chatId))
       .map(bot::execute)
       .then();
   }
@@ -149,28 +155,38 @@ public class ProfileService {
 
   public Mono<Void> setMatchMinAge(Update update) {
     Message message = update.message();
-    String age = message.text();
     Long chatId = message.chat().id();
-    return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("matchMinAge", age))
-      .thenMany(Flux.just(
-        new SendMessage(chatId, String.format("Okay, match min age is %s", age)),
-        profileMenu(chatId, "Anything else?")
-      ))
+    Integer userId = message.from().id();
+    return Mono.just(message.text())
+      .map(Integer::valueOf)
+      .flatMap(age -> commands.hmset(RedisKeys.user(userId), singletonMap("matchMinAge", age.toString())))
+      .then(clearSession(userId))
+      .thenReturn(profileMenu(chatId, "Anything else?"))
+      .onErrorReturn(ageValidationFailMessage(chatId))
       .map(bot::execute)
       .then();
   }
 
+  private Mono<Void> clearSession(Integer userId) {
+    return sessionService.clear(userId);
+  }
+
   public Mono<Void> setMatchMaxAge(Update update) {
     Message message = update.message();
-    String age = message.text();
     Long chatId = message.chat().id();
-    return commands.hmset(RedisKeys.user(message.from().id()), singletonMap("matchMaxAge", age))
-      .thenMany(Flux.just(
-        new SendMessage(chatId, String.format("Set match max age to %s", age)),
-        profileMenu(chatId, "Anything else?")
-      ))
+    Integer userId = message.from().id();
+    return Mono.just(message.text())
+      .map(Integer::valueOf)
+      .flatMap(age -> commands.hmset(RedisKeys.user(userId), singletonMap("matchMaxAge", age.toString())))
+      .then(clearSession(userId))
+      .thenReturn(profileMenu(chatId, "Anything else?"))
+      .onErrorReturn(ageValidationFailMessage(chatId))
       .map(bot::execute)
       .then();
+  }
+
+  private SendMessage ageValidationFailMessage(Long chatId) {
+    return new SendMessage(chatId, "Respond with a number please");
   }
 
   public Mono<Void> leaveProfileConfiguration(Update update) {
