@@ -26,8 +26,8 @@ public final class RedisKeys {
     return id + ":dislikes";
   }
 
-  public static String[] contact(Object id) {
-    return new String[] { Contact.phone(id), Contact.firstName(id), Contact.lastName(id), Contact.chatId(id) };
+  public static String contact(Object id) {
+    return id + ":contact";
   }
 
   public static final class Contact {

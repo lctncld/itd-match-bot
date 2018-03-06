@@ -90,15 +90,11 @@ public class MatchService {
       .map(bot::execute)
       .then(commands.sismember(RedisKeys.likes(matchId), cb.from().id().toString()))
       .filter(Boolean::valueOf)
-      .flatMap(done -> commands.mget(RedisKeys.contact(matchId))
-        .collectMap(KeyValue::getKey, KeyValue::getValue)
-      )
-      .map(details -> { // TODO: flatMapMany contact to other party too
-        String phone = RedisKeys.Contact.phone(matchId);
-        String firstName = RedisKeys.Contact.firstName(matchId);
-        String lastName = RedisKeys.Contact.lastName(matchId);
-        return new SendContact(chatId, details.get(phone), details.get(firstName)).lastName(details.get(lastName));
-      })
+      .flatMap(done -> commands.hgetall(RedisKeys.contact(matchId)))
+      .flatMapMany(match -> Flux.just(
+        new SendContact(chatId, match.get("phone"), match.get("first_name")).lastName(match.get("last_name")),
+        new SendMessage(match.get("chat_id"), "Someone is interested in you!")
+      ))
       .map(bot::execute)
       .then(suggestFromCallback(update))
       .then();

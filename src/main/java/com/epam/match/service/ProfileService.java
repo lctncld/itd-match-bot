@@ -45,7 +45,7 @@ public class ProfileService {
   public Mono<Void> setupProfile(Update update) {
     Message message = update.message();
     Integer userId = message.from().id();
-    return commands.get(RedisKeys.Contact.phone(update.message().from().id()))
+    return commands.hget(RedisKeys.contact(userId), "phone")
       .single()
       .then()
       .then(getProfileAsString(userId))
@@ -195,14 +195,12 @@ public class ProfileService {
         .then();
     }
     Integer id = update.message().from().id();
-    return commands.msetnx(
-      new HashMap<String, String>() {{
-        put(RedisKeys.Contact.phone(id), contact.phoneNumber());
-        put(RedisKeys.Contact.firstName(id), contact.firstName());
-        put(RedisKeys.Contact.lastName(id), contact.lastName());
-        put(RedisKeys.Contact.chatId(id), message.chat().id().toString());
-      }}
-    )
+    return commands.hmset(RedisKeys.contact(id), new HashMap<>() {{
+      put("phone", contact.phoneNumber());
+      put("first_name", contact.firstName());
+      put("last_name", contact.lastName());
+      put("chat_id", message.chat().id().toString());
+    }})
       .then(setDefaultImage(id))
       .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
       .map(bot::execute)
