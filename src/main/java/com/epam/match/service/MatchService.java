@@ -16,8 +16,10 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
+import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
+import java.util.Map;
 import java.util.function.Function;
 
 @Service
@@ -48,8 +50,10 @@ public class MatchService {
     return nextMatch(userId)
       .map(tuple -> {
         String matchId = tuple.getT1();
-        return new SendPhoto(chatId, tuple.getT2())
-          .caption("Description goes here?") //TODO
+        String photoId = tuple.getT2();
+        String name = tuple.getT3();
+        return new SendPhoto(chatId, photoId)
+          .caption(name)
           .replyMarkup(new InlineKeyboardMarkup(new InlineKeyboardButton[] {
             new InlineKeyboardButton("+").callbackData("/like/" + matchId),
             new InlineKeyboardButton("-").callbackData("/dislike/" + matchId)
@@ -61,7 +65,7 @@ public class MatchService {
       .then();
   }
 
-  private Flux<Tuple2<String, String>> nextMatch(Integer userId) {
+  private Flux<Tuple3<String, String, String>> nextMatch(Integer userId) {
     return locationService.get(userId.toString())
       .filterWhen(matchId -> commands.sismember(RedisKeys.likes(userId), matchId)
         .map(negate()))
@@ -69,8 +73,11 @@ public class MatchService {
         .map(negate()))
       .doOnNext(matchId -> log.info("Match for {} is {}", userId, matchId))
       .take(1)
-      .flatMap(matchId -> commands.get(RedisKeys.image(matchId))
-        .map(imageId -> Tuples.of(matchId, imageId)));
+      .flatMap(matchId -> Flux.zip(
+        Mono.just(matchId),
+        commands.get(RedisKeys.image(matchId)),
+        commands.hget(RedisKeys.contact(matchId), "first_name")
+      ));
   }
 
   private Function<Boolean, Boolean> negate() {
@@ -81,20 +88,29 @@ public class MatchService {
     CallbackQuery cb = update.callbackQuery();
     String matchId = getMatchIdFromCommand(cb.data());
     Long chatId = cb.message().chat().id();
-    return commands.sadd(RedisKeys.likes(cb.from().id()), matchId)
+    Integer myId = cb.from().id();
+    return commands.sadd(RedisKeys.likes(myId), matchId)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new EditMessageReplyMarkup(chatId, cb.message().messageId())
           .replyMarkup(new InlineKeyboardMarkup())
       ))
       .map(bot::execute)
-      .then(commands.sismember(RedisKeys.likes(matchId), cb.from().id().toString()))
+      .then(commands.sismember(RedisKeys.likes(matchId), myId.toString()))
       .filter(Boolean::valueOf)
-      .flatMap(done -> commands.hgetall(RedisKeys.contact(matchId)))
-      .flatMapMany(match -> Flux.just(
-        new SendContact(chatId, match.get("phone"), match.get("first_name")).lastName(match.get("last_name")),
-        new SendMessage(match.get("chat_id"), "Someone is interested in you!")
+      .flatMapMany(done -> Flux.zip(
+        commands.hgetall(RedisKeys.contact(matchId)),
+        commands.hgetall(RedisKeys.contact(myId))
       ))
+      .flatMap(tuple -> {
+        Map<String, String> match = tuple.getT1();
+        Map<String, String> me = tuple.getT2();
+        return Flux.just(
+          new SendContact(chatId, match.get("phone"), match.get("first_name")).lastName(match.get("last_name")),
+          new SendMessage(match.get("chat_id"), String.format("Hey, %s is interested in you!", me.get("first_name"))),
+          new SendContact(match.get("chat_id"), me.get("phone"), me.get("first_name")).lastName(me.get("last_name"))
+        );
+      })
       .map(bot::execute)
       .then(suggestFromCallback(update))
       .then();

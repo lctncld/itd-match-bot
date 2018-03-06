@@ -26,9 +26,8 @@ public class MessageService {
       message = update.callbackQuery().message();
     }
     return Mono.just(
-      new SendMessage(message.chat().id(),
-        String.format("Unrecognized command \"%s\". Try asking for /help", message.text())
-      ).replyMarkup(new ReplyKeyboardRemove())
+      new SendMessage(message.chat().id(), "Unrecognized command. Try asking for /help")
+        .replyMarkup(new ReplyKeyboardRemove())
     )
       .map(bot::execute)
       .then();
