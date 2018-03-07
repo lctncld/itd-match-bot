@@ -1,11 +1,11 @@
 package com.epam.match;
 
 import com.epam.match.domain.Contact;
+import com.epam.match.domain.Match;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.Map;
 
 @Component
 public class Repository {
@@ -24,8 +24,12 @@ public class Repository {
     return commands.sadd(RedisKeys.dislikes(who), whom);
   }
 
-  public Mono<Boolean> isMutualLike(String who, String whom) {
+  public Mono<Boolean> isLikedBy(String who, String whom) {
     return commands.sismember(RedisKeys.likes(whom), who);
+  }
+
+  public Mono<Boolean> isDislikedBy(String who, String whom) {
+    return commands.sismember(RedisKeys.dislikes(whom), who);
   }
 
   public Mono<Contact> getContact(String id) {
@@ -37,4 +41,19 @@ public class Repository {
         .phone("phone")
         .build());
   }
+
+  public Mono<Match> getMatchById(String id) {
+    return Flux.zip(
+      commands.get(RedisKeys.image(id)),
+      commands.hget(RedisKeys.contact(id), "first_name")
+    )
+      .next()
+      .map(tuple -> Match.builder()
+        .id(tuple.getT1())
+        .image(tuple.getT2())
+        .name(id)
+        .build()
+      );
+  }
+
 }

@@ -77,7 +77,7 @@ public class MatchService {
   }
 
   private Mono<Void> shareContacts(String myId, String matchId) {
-    return repository.isMutualLike(myId, matchId)
+    return repository.isLikedBy(myId, matchId)
       .filter(Boolean::valueOf)
       .flatMapMany(done -> Flux.zip(
         repository.getContact(matchId),
