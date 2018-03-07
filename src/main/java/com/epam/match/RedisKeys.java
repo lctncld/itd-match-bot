@@ -22,7 +22,7 @@ public final class RedisKeys {
     return id + ":likes";
   }
 
-  public static String dislikes(Integer id) {
+  public static String dislikes(Object id) {
     return id + ":dislikes";
   }
 
