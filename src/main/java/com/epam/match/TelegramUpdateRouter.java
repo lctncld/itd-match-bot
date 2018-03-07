@@ -1,11 +1,11 @@
 package com.epam.match;
 
 import com.epam.match.domain.Gender;
-import com.epam.match.service.MatchService;
-import com.epam.match.service.MessageService;
-import com.epam.match.service.ProfileService;
-import com.epam.match.service.QuestionService;
-import com.epam.match.service.SessionService;
+import com.epam.match.service.session.SessionService;
+import com.epam.match.service.telegram.MatchService;
+import com.epam.match.service.telegram.MessageService;
+import com.epam.match.service.telegram.ProfileService;
+import com.epam.match.service.telegram.QuestionService;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Contact;
 import com.pengrad.telegrambot.model.Location;

@@ -1,7 +1,8 @@
-package com.epam.match.service;
+package com.epam.match.service.match;
 
-import com.epam.match.Repository;
+import com.epam.match.repository.Repository;
 import com.epam.match.domain.Match;
+import com.epam.match.service.geo.LocationService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -22,7 +23,7 @@ public class FindMatchService {
   }
 
   public Mono<Match> next(Integer userId) {
-    return locationService.get(userId.toString())
+    return locationService.nearbyUsers(userId.toString(), 10.0)
       .filterWhen(matchId -> repository.isLikedBy(userId.toString(), matchId)
         .map(negate())
       )

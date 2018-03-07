@@ -1,10 +1,13 @@
-package com.epam.match.service;
+package com.epam.match.service.telegram;
 
-import com.epam.match.RedisKeys;
 import com.epam.match.domain.Gender;
+import com.epam.match.repository.Repository;
+import com.epam.match.service.geo.LocationService;
+import com.epam.match.service.session.SessionService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Contact;
+import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
@@ -18,41 +21,34 @@ import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.GetUserProfilePhotos;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.response.GetUserProfilePhotosResponse;
-import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.HashMap;
-import java.util.stream.Collectors;
-
-import static java.util.Collections.singletonMap;
 
 @Service
 public class ProfileService {
 
   private final TelegramBot bot;
 
-  private final RedisReactiveCommands<String, String> commands;
-
   private final LocationService locationService;
 
   private final SessionService sessionService;
 
-  public ProfileService(TelegramBot bot, RedisReactiveCommands<String, String> commands,
-    LocationService locationService, SessionService sessionService) {
+  private final Repository repository;
+
+  public ProfileService(TelegramBot bot, LocationService locationService, SessionService sessionService,
+    Repository repository) {
     this.bot = bot;
-    this.commands = commands;
     this.locationService = locationService;
     this.sessionService = sessionService;
+    this.repository = repository;
   }
 
   public Mono<Void> setupProfile(Update update) {
     Message message = update.message();
     Integer userId = message.from().id();
-    return commands.hget(RedisKeys.contact(userId), "phone")
+    return repository.getPhone(userId.toString())
       .single()
-      .then()
       .then(getProfileAsString(userId))
       .map(profile -> profileMenu(message.chat().id(), profile))
       .onErrorReturn(new SendMessage(message.chat().id(), "Share your phone number first!")
@@ -67,13 +63,8 @@ public class ProfileService {
   }
 
   private Mono<String> getProfileAsString(Integer userId) {
-    return commands.hgetall(RedisKeys.user(userId)) //FIXME unchecked assignment
-      .map(profile -> profile.isEmpty()
-        ? "Your profile appears to be blank, tap these buttons to fill it!"
-        : "Your settings are:\n" + profile.entrySet().stream()
-          .map(entry -> entry.getKey() + ": " + entry.getValue())
-          .collect(Collectors.joining(", "))
-      );
+    return repository.getSearchProfileAsString(userId.toString())
+      .switchIfEmpty(Mono.just("Your profile appears to be blank, tap these buttons to fill it!"));
   }
 
   private SendMessage profileMenu(Long chatId, String message) {
@@ -107,8 +98,8 @@ public class ProfileService {
     Integer userId = message.from().id();
     return Mono.just(message.text())
       .map(Integer::valueOf)
-      .flatMap(age -> commands.hmset(RedisKeys.user(userId), singletonMap("age", age.toString())))
-      .then(clearSession(userId))
+      .flatMap(age -> repository.setAge(userId.toString(), age))
+      .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
       .onErrorReturn(ageValidationFailMessage(chatId))
       .map(bot::execute)
@@ -118,7 +109,8 @@ public class ProfileService {
   public Mono<Void> setLocation(Update update) {
     Message message = update.message();
     Long chatId = message.chat().id();
-    return locationService.set(message.from().id().toString(), message.location())
+    Location location = message.location();
+    return locationService.update(message.from().id().toString(), location.latitude(), location.longitude())
       .thenMany(Flux.just(
         new SendMessage(chatId, "Your location is updated, I'll let others know")
       ))
@@ -130,7 +122,7 @@ public class ProfileService {
   public Mono<Void> setMatchGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("matchGender", gender.toString()))
+    return repository.setMatchGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, "Now looking for " + gender.toString()),
@@ -143,7 +135,7 @@ public class ProfileService {
   public Mono<Void> setGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return commands.hmset(RedisKeys.user(cb.from().id()), singletonMap("gender", gender.toString()))
+    return repository.setGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, String.format("You are %s, understood", gender.toString())),
@@ -159,16 +151,12 @@ public class ProfileService {
     Integer userId = message.from().id();
     return Mono.just(message.text())
       .map(Integer::valueOf)
-      .flatMap(age -> commands.hmset(RedisKeys.user(userId), singletonMap("matchMinAge", age.toString())))
-      .then(clearSession(userId))
+      .flatMap(age -> repository.setMatchMinAge(userId.toString(), age))
+      .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
       .onErrorReturn(ageValidationFailMessage(chatId))
       .map(bot::execute)
       .then();
-  }
-
-  private Mono<Void> clearSession(Integer userId) {
-    return sessionService.clear(userId);
   }
 
   public Mono<Void> setMatchMaxAge(Update update) {
@@ -177,8 +165,8 @@ public class ProfileService {
     Integer userId = message.from().id();
     return Mono.just(message.text())
       .map(Integer::valueOf)
-      .flatMap(age -> commands.hmset(RedisKeys.user(userId), singletonMap("matchMaxAge", age.toString())))
-      .then(clearSession(userId))
+      .flatMap(age -> repository.setMatchMaxAge(userId.toString(), age))
+      .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
       .onErrorReturn(ageValidationFailMessage(chatId))
       .map(bot::execute)
@@ -211,12 +199,13 @@ public class ProfileService {
         .then();
     }
     Integer id = update.message().from().id();
-    return commands.hmset(RedisKeys.contact(id), new HashMap<>() {{
-      put("phone", contact.phoneNumber());
-      put("first_name", contact.firstName());
-      put("last_name", contact.lastName());
-      put("chat_id", message.chat().id().toString());
-    }})
+    return repository.setContact(id.toString(), com.epam.match.domain.Contact.builder()
+      .phone(contact.phoneNumber())
+      .firstName(contact.firstName())
+      .lastName(contact.lastName())
+      .chatId(message.chat().id().toString())
+      .build()
+    )
       .then(setDefaultImage(id))
       .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
       .map(bot::execute)
@@ -233,7 +222,7 @@ public class ProfileService {
       .map(p -> p[0]) // Cool
       .map(p -> p[0]) // API
       .map(PhotoSize::fileId)
-      .flatMap(image -> commands.set(RedisKeys.image(userId), image))
+      .flatMap(image -> repository.setImage(userId.toString(), image))
       .then();
   }
 
@@ -241,7 +230,7 @@ public class ProfileService {
     Message message = update.message();
     PhotoSize photo = message.photo()[0];
     String photoId = photo.fileId();
-    return commands.set(RedisKeys.image(message.from().id()), photoId)
+    return repository.setImage(message.from().id().toString(), photoId)
       .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"))
       .map(bot::execute)
       .then();

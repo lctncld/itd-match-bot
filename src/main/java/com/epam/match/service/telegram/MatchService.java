@@ -1,7 +1,8 @@
-package com.epam.match.service;
+package com.epam.match.service.telegram;
 
-import com.epam.match.Repository;
+import com.epam.match.repository.Repository;
 import com.epam.match.domain.Contact;
+import com.epam.match.service.match.FindMatchService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
@@ -14,7 +15,6 @@ import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
 import com.pengrad.telegrambot.request.SendContact;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
-import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;

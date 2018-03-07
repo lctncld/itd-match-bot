@@ -1,4 +1,4 @@
-package com.epam.match.service;
+package com.epam.match.service.telegram;
 
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Message;

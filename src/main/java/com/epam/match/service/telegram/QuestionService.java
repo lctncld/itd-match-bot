@@ -1,6 +1,7 @@
-package com.epam.match.service;
+package com.epam.match.service.telegram;
 
-import com.epam.match.session.Step;
+import com.epam.match.service.session.ProfileSetupStep;
+import com.epam.match.service.session.SessionService;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Update;
@@ -48,7 +49,7 @@ public class QuestionService {
   public Mono<Void> askAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return session.set(cb.from().id(), Step.SET_MY_AGE)
+    return session.set(cb.from().id(), ProfileSetupStep.SET_MY_AGE)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, "So, what's your age?"),
@@ -83,7 +84,7 @@ public class QuestionService {
   public Mono<Void> askMatchMinAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return session.set(cb.from().id(), Step.SET_MATCH_MIN_AGE)
+    return session.set(cb.from().id(), ProfileSetupStep.SET_MATCH_MIN_AGE)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, "Send me min age"),
@@ -96,7 +97,7 @@ public class QuestionService {
   public Mono<Void> askMatchMaxAge(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return session.set(cb.from().id(), Step.SET_MATCH_MAX_AGE)
+    return session.set(cb.from().id(), ProfileSetupStep.SET_MATCH_MAX_AGE)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, "And the max age is?"),
