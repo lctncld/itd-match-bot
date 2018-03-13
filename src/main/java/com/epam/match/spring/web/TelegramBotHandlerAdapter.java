@@ -51,12 +51,14 @@ public class TelegramBotHandlerAdapter implements HandlerAdapter {
     if (result instanceof Flux) {
       return ((Flux<BaseRequest>) result)
         .map(bot::execute)
+        .onErrorResume(ex -> Mono.error(ex))
         .then(Mono.empty());
     } else if (result instanceof Mono) {
       return ((Mono<BaseRequest>) result)
         .map(bot::execute)
+        .onErrorResume(ex -> Mono.error(ex))
         .then(Mono.empty());
     }
-    return Mono.error(new RuntimeException("Bad handler cast"));
+    return Mono.empty();
   }
 }

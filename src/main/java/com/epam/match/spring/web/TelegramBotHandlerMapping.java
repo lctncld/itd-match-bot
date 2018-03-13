@@ -53,7 +53,7 @@ public class TelegramBotHandlerMapping implements HandlerMapping, InitializingBe
         handlerMethod = messageHandlers.get("/unknown_command");
       }
     } else {
-      handlerMethod = messageHandlers.get("/unknown_command");
+      return Mono.empty();
     }
     log.info("Handler for {} is {}", update, handlerMethod);
 
