@@ -15,6 +15,7 @@ import org.springframework.core.Ordered;
 import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.server.ServerWebExchange;
@@ -38,18 +39,21 @@ public class TelegramBotHandlerMapping implements HandlerMapping, InitializingBe
   @Override
   public Mono<Object> getHandler(ServerWebExchange exchange) {
     ServerRequest request = ServerRequest.create(exchange, this.messageReaders);
-    Update update = request.bodyToMono(String.class)
+    return request.bodyToMono(String.class)
       .map(BotUtils::parseUpdate)
-      .block();
-
-    String command = getCommand(update);
-    return registry.getHandler(command, update)
-      .doOnNext(handler -> log.info("Command: {}, Handler: {}, Update: {}", command, handler, update))
-      .map(handler -> InvokableUpdate.builder()
-        .method(handler)
-        .update(update)
-        .build()
-      );
+      .flatMap(update -> {
+        String command = getCommand(update);
+        log.info("Command: {}, Update: {}", command, update);
+        return Mono.zip(registry.getHandler(command, update), Mono.justOrEmpty(update));
+      })
+      .map(tuple -> {
+        HandlerMethod handlerMethod = tuple.getT1();
+        Update update = tuple.getT2();
+        return InvokableUpdate.builder()
+          .method(handlerMethod)
+          .update(update)
+          .build();
+      });
   }
 
   @Override
