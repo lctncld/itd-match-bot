@@ -2,6 +2,11 @@ package com.epam.match.spring.web;
 
 import com.epam.match.spring.registry.TelegramBotHandlerRegistry;
 import com.pengrad.telegrambot.BotUtils;
+import com.pengrad.telegrambot.model.CallbackQuery;
+import com.pengrad.telegrambot.model.Contact;
+import com.pengrad.telegrambot.model.Location;
+import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
@@ -10,7 +15,6 @@ import org.springframework.core.Ordered;
 import org.springframework.http.codec.HttpMessageReader;
 import org.springframework.http.codec.ServerCodecConfigurer;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.reactive.HandlerMapping;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.server.ServerWebExchange;
@@ -18,7 +22,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 public class TelegramBotHandlerMapping implements HandlerMapping, InitializingBean, Ordered {
@@ -39,30 +42,14 @@ public class TelegramBotHandlerMapping implements HandlerMapping, InitializingBe
       .map(BotUtils::parseUpdate)
       .block();
 
-    Map<String, HandlerMethod> callbackHandlers = registry.getCallbackHandlers();
-    Map<String, HandlerMethod> messageHandlers = registry.getMessageHandlers();
-
-    HandlerMethod handlerMethod;
-    if (update.callbackQuery() != null) {
-      String cmd = update.callbackQuery().data();
-      handlerMethod = callbackHandlers.get(cmd);
-    } else if (update.message() != null) {
-      String text = update.message().text();
-      handlerMethod = messageHandlers.get(text);
-      if (handlerMethod == null) {
-        handlerMethod = messageHandlers.get("/unknown_command");
-      }
-    } else {
-      return Mono.empty();
-    }
-    log.info("Handler for {} is {}", update, handlerMethod);
-
-    return Mono.just(
-      InvokableUpdate.builder()
-        .method(handlerMethod)
+    String command = getCommand(update);
+    return registry.getHandler(command, update)
+      .doOnNext(handler -> log.info("Command: {}, Handler: {}, Update: {}", command, handler, update))
+      .map(handler -> InvokableUpdate.builder()
+        .method(handler)
         .update(update)
         .build()
-    );
+      );
   }
 
   @Override
@@ -76,5 +63,47 @@ public class TelegramBotHandlerMapping implements HandlerMapping, InitializingBe
   @Override
   public int getOrder() {
     return Ordered.HIGHEST_PRECEDENCE;
+  }
+
+  private String getCommand(Update update) {
+    CallbackQuery callback = update.callbackQuery();
+    if (callback != null) {
+      String callbackData = callback.data();
+      return extractCommand(callbackData);
+    }
+
+    Message message = update.message();
+    if (message != null) {
+
+      String messageText = message.text();
+      if (messageText != null) {
+        return extractCommand(messageText);
+      }
+
+      Location location = message.location();
+      if (location != null) {
+        return "/location";
+      }
+      Contact contact = message.contact();
+      if (contact != null) {
+        return "/contact";
+      }
+      PhotoSize[] photo = message.photo();
+      if (photo != null && photo.length > 0) {
+        return "/photo";
+      }
+    }
+    return null;
+  }
+
+  // TODO
+  private String extractCommand(String text) {
+    boolean isCommand = text != null && text.startsWith("/");
+    if (!isCommand) {
+      log.info("String {} is not a command", text);
+    }
+    return isCommand
+      ? text
+      : null;
   }
 }

@@ -3,32 +3,29 @@ package com.epam.match.service.telegram;
 import com.epam.match.domain.Gender;
 import com.epam.match.repository.Repository;
 import com.epam.match.service.geo.LocationService;
+import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.service.session.SessionService;
-import com.pengrad.telegrambot.TelegramBot;
+import com.epam.match.spring.annotation.MessageMapping;
+import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Contact;
 import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
-import com.pengrad.telegrambot.model.UserProfilePhotos;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.KeyboardButton;
 import com.pengrad.telegrambot.model.request.ReplyKeyboardMarkup;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
+import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.DeleteMessage;
-import com.pengrad.telegrambot.request.GetUserProfilePhotos;
 import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.response.GetUserProfilePhotosResponse;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Service
+@TelegramBotController
 public class ProfileService {
-
-  private final TelegramBot bot;
 
   private final LocationService locationService;
 
@@ -36,15 +33,14 @@ public class ProfileService {
 
   private final Repository repository;
 
-  public ProfileService(TelegramBot bot, LocationService locationService, SessionService sessionService,
-    Repository repository) {
-    this.bot = bot;
+  public ProfileService(LocationService locationService, SessionService sessionService, Repository repository) {
     this.locationService = locationService;
     this.sessionService = sessionService;
     this.repository = repository;
   }
 
-  public Mono<Void> setupProfile(Update update) {
+  @MessageMapping("/profile")
+  public Mono<? extends BaseRequest> setupProfile(Update update) {
     Message message = update.message();
     Integer userId = message.from().id();
     return repository.getPhone(userId.toString())
@@ -57,9 +53,7 @@ public class ProfileService {
             .requestContact(true) })
           .oneTimeKeyboard(true)
           .resizeKeyboard(true))
-      )
-      .map(bot::execute)
-      .then();
+      );
   }
 
   private Mono<String> getProfileAsString(Integer userId) {
@@ -92,7 +86,8 @@ public class ProfileService {
       .replyMarkup(actions);
   }
 
-  public Mono<Void> setAge(Update update) {
+  @MessageMapping(step = ProfileSetupStep.SET_MY_AGE)
+  public Mono<? extends BaseRequest> setAge(Update update) {
     Message message = update.message();
     Long chatId = message.chat().id();
     Integer userId = message.from().id();
@@ -101,25 +96,35 @@ public class ProfileService {
       .flatMap(age -> repository.setAge(userId.toString(), age))
       .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
-      .onErrorReturn(ageValidationFailMessage(chatId))
-      .map(bot::execute)
-      .then();
+      .onErrorReturn(ageValidationFailMessage(chatId));
   }
 
-  public Mono<Void> setLocation(Update update) {
+  @MessageMapping("/location")
+  public Mono<? extends BaseRequest> setLocation(Update update) {
     Message message = update.message();
     Long chatId = message.chat().id();
     Location location = message.location();
     return locationService.update(message.from().id().toString(), location.latitude(), location.longitude())
-      .thenMany(Flux.just(
-        new SendMessage(chatId, "Your location is updated, I'll let others know")
-      ))
-      .onErrorReturn(new SendMessage(chatId, "Something went wrong"))
-      .map(bot::execute)
-      .then();
+      .thenReturn(new SendMessage(chatId, "Your location is updated, I'll let others know"))
+      .onErrorReturn(new SendMessage(chatId, "Something went wrong"));
   }
 
-  public Mono<Void> setMatchGender(Update update, Gender gender) {
+  @MessageMapping("/profile/match/gender/male")
+  public Flux<? extends BaseRequest> setMatchGenderToMale(Update update) {
+    return setMatchGender(update, Gender.MALE);
+  }
+
+  @MessageMapping("/profile/match/gender/female")
+  public Flux<? extends BaseRequest> setMatchGenderToFemale(Update update) {
+    return setMatchGender(update, Gender.FEMALE);
+  }
+
+  @MessageMapping("/profile/match/gender/both")
+  public Flux<? extends BaseRequest> setMatchGenderToBoth(Update update) {
+    return setMatchGender(update, Gender.BOTH);
+  }
+
+  private Flux<? extends BaseRequest> setMatchGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return repository.setMatchGender(cb.from().id().toString(), gender)
@@ -127,12 +132,20 @@ public class ProfileService {
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, "Now looking for " + gender.toString()),
         profileMenu(chatId, "Anything else?")
-      ))
-      .map(bot::execute)
-      .then();
+      ));
   }
 
-  public Mono<Void> setGender(Update update, Gender gender) {
+  @MessageMapping("/profile/me/gender/male")
+  public Flux<? extends BaseRequest> setGenderToMale(Update update) {
+    return setGender(update, Gender.MALE);
+  }
+
+  @MessageMapping("/profile/me/gender/female")
+  public Flux<? extends BaseRequest> setGenderToFemale(Update update) {
+    return setGender(update, Gender.FEMALE);
+  }
+
+  private Flux<? extends BaseRequest> setGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return repository.setGender(cb.from().id().toString(), gender)
@@ -140,12 +153,11 @@ public class ProfileService {
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, String.format("You are %s, understood", gender.toString())),
         profileMenu(chatId, "Anything else?")
-      ))
-      .map(bot::execute)
-      .then();
+      ));
   }
 
-  public Mono<Void> setMatchMinAge(Update update) {
+  @MessageMapping(step = ProfileSetupStep.SET_MATCH_MIN_AGE)
+  public Mono<? extends BaseRequest> setMatchMinAge(Update update) {
     Message message = update.message();
     Long chatId = message.chat().id();
     Integer userId = message.from().id();
@@ -154,12 +166,11 @@ public class ProfileService {
       .flatMap(age -> repository.setMatchMinAge(userId.toString(), age))
       .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
-      .onErrorReturn(ageValidationFailMessage(chatId))
-      .map(bot::execute)
-      .then();
+      .onErrorReturn(ageValidationFailMessage(chatId));
   }
 
-  public Mono<Void> setMatchMaxAge(Update update) {
+  @MessageMapping(step = ProfileSetupStep.SET_MATCH_MAX_AGE)
+  public Mono<? extends BaseRequest> setMatchMaxAge(Update update) {
     Message message = update.message();
     Long chatId = message.chat().id();
     Integer userId = message.from().id();
@@ -168,16 +179,15 @@ public class ProfileService {
       .flatMap(age -> repository.setMatchMaxAge(userId.toString(), age))
       .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
-      .onErrorReturn(ageValidationFailMessage(chatId))
-      .map(bot::execute)
-      .then();
+      .onErrorReturn(ageValidationFailMessage(chatId));
   }
 
   private SendMessage ageValidationFailMessage(Long chatId) {
     return new SendMessage(chatId, "Respond with a number please");
   }
 
-  public Mono<Void> leaveProfileConfiguration(Update update) {
+  @MessageMapping("/profile/done")
+  public Flux<? extends BaseRequest> leaveProfileConfiguration(Update update) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
     return getProfileAsString(cb.from().id())
@@ -185,18 +195,15 @@ public class ProfileService {
         new SendMessage(chatId, profile),
         new AnswerCallbackQuery(cb.id()),
         new DeleteMessage(chatId, cb.message().messageId())
-      ))
-      .map(bot::execute)
-      .then();
+      ));
   }
 
-  public Mono<Void> setContact(Update update) {
+  @MessageMapping("/contact")
+  public Mono<? extends BaseRequest> setContact(Update update) {
     Message message = update.message();
     Contact contact = message.contact();
     if (contact.userId() == null || !contact.userId().equals(message.from().id())) {
-      return Mono.just(new SendMessage(message.chat().id(), "I don't believe you"))
-        .map(bot::execute)
-        .then();
+      return Mono.just(new SendMessage(message.chat().id(), "I don't believe you"));
     }
     Integer id = update.message().from().id();
     return repository.setContact(id.toString(), com.epam.match.domain.Contact.builder()
@@ -206,33 +213,30 @@ public class ProfileService {
       .chatId(message.chat().id().toString())
       .build()
     )
-      .then(setDefaultImage(id))
-      .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"))
-      .map(bot::execute)
-      .then();
+      //      .then(setDefaultImage(id)) FIXME
+      .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"));
   }
 
-  public Mono<Void> setDefaultImage(Integer userId) {
-    return Mono.just(userId)
-      .map(GetUserProfilePhotos::new)
-      .map(bot::execute)
-      .map(GetUserProfilePhotosResponse::photos)
-      .filter(p -> p.totalCount() > 0)
-      .map(UserProfilePhotos::photos)
-      .map(p -> p[0]) // Cool
-      .map(p -> p[0]) // API
-      .map(PhotoSize::fileId)
-      .flatMap(image -> repository.setImage(userId.toString(), image))
-      .then();
-  }
+  //  public Mono<Void> setDefaultImage(Integer userId) {
+  //    return Mono.just(userId)
+  //      .map(GetUserProfilePhotos::new)
+  //      .map(bot::execute)
+  //      .map(GetUserProfilePhotosResponse::photos)
+  //      .filter(p -> p.totalCount() > 0)
+  //      .map(UserProfilePhotos::photos)
+  //      .map(p -> p[0]) // Cool
+  //      .map(p -> p[0]) // API
+  //      .map(PhotoSize::fileId)
+  //      .flatMap(image -> repository.setImage(userId.toString(), image))
+  //      .then();
+  //  }
 
-  public Mono<Void> setImage(Update update) {
+  @MessageMapping("/photo")
+  public Mono<? extends BaseRequest> setImage(Update update) {
     Message message = update.message();
     PhotoSize photo = message.photo()[0];
     String photoId = photo.fileId();
     return repository.setImage(message.from().id().toString(), photoId)
-      .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"))
-      .map(bot::execute)
-      .then();
+      .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"));
   }
 }

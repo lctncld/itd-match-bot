@@ -1,8 +1,8 @@
 package com.epam.match.spring;
 
+import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
-import com.epam.match.spring.annotation.TelegramUpdateType;
 import com.epam.match.spring.registry.TelegramBotHandlerRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
@@ -46,16 +46,15 @@ public class TelegramBotControllerBeanPostProcessor implements BeanPostProcessor
         .forEach(method -> {
           MessageMapping mapping = method.getAnnotation(MessageMapping.class);
           String command = mapping.value();
-          HandlerMethod handler = new HandlerMethod(bean, method);
-          TelegramUpdateType type = mapping.type();
-          switch (type) {
-            case MESSAGE:
-              registry.addMessageHandler(command, handler);
-              break;
-            case CALLBACK_QUERY:
-              registry.addCallbackHandler(command, handler);
-              break;
+          if ("".equals(command)) {
+            ProfileSetupStep step = mapping.step();
+            if (step != ProfileSetupStep.UNKNOWN) {
+              command = step.toString();
+            }
           }
+          log.info("Found handler {} : {}", command, method);
+          HandlerMethod handler = new HandlerMethod(bean, method);
+          registry.addMessageHandler(command, handler);
         });
     }
     return bean;

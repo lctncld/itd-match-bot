@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -61,7 +62,7 @@ public class Repository {
   }
 
   public Mono<String> getSearchProfileAsString(String id) {
-    return commands.hgetall(Keys.contact(id))
+    return commands.hgetall(Keys.user(id))
       .filter(profile -> !profile.isEmpty())
       .map(profile -> profile.entrySet().stream()
         .map(entry -> entry.getKey() + ":" + entry.getValue())
@@ -99,12 +100,12 @@ public class Repository {
   }
 
   public Mono<Void> setContact(String id, Contact contact) {
-    return commands.hmset(Keys.contact(id), Map.of(
-      "phone", contact.getPhone(),
-      "first_name", contact.getFirstName(),
-      "last_name", contact.getLastName(),
-      "chat_id", contact.getChatId()
-    ))
+    return commands.hmset(Keys.contact(id), new HashMap<>() {{
+      put("phone", contact.getPhone());
+      put("first_name", contact.getFirstName());
+      put("last_name", contact.getLastName());
+      put("chat_id", contact.getChatId());
+    }})
       .then();
   }
 

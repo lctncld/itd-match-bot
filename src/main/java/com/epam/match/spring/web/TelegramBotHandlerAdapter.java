@@ -15,7 +15,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.lang.reflect.Method;
-import java.util.Map;
 
 @Component
 public class TelegramBotHandlerAdapter implements HandlerAdapter {
@@ -30,13 +29,13 @@ public class TelegramBotHandlerAdapter implements HandlerAdapter {
   public boolean supports(Object handler) {
     if (handler instanceof InvokableUpdate) {
       HandlerMethod handlerMethod = ((InvokableUpdate) handler).getMethod();
-      return registry.getMessageHandlers().containsValue(handlerMethod)
-        || registry.getCallbackHandlers().containsValue(handlerMethod);
+      return handlerMethod != null;
     }
     return false;
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Mono<HandlerResult> handle(ServerWebExchange exchange, Object handler) {
     InvokableUpdate updateHandler = (InvokableUpdate) handler;
     HandlerMethod handlerMethod = updateHandler.getMethod();
