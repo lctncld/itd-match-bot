@@ -54,9 +54,9 @@ public class Repository {
     )
       .next()
       .map(tuple -> Match.builder()
-        .id(tuple.getT1())
-        .image(tuple.getT2())
-        .name(id)
+        .id(id)
+        .image(tuple.getT1())
+        .name(tuple.getT2())
         .build()
       );
   }
