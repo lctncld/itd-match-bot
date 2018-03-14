@@ -14,7 +14,4 @@ public @interface MessageMapping {
   String value() default "";
 
   ProfileSetupStep step() default ProfileSetupStep.UNKNOWN;
-
-  TelegramUpdateType type() default TelegramUpdateType.MESSAGE;
-
 }
