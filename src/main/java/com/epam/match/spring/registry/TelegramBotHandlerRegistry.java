@@ -31,12 +31,13 @@ public class TelegramBotHandlerRegistry {
     log.info("getting handler for {}", command);
     return Mono.justOrEmpty(command)
       .flatMap(cmd -> Mono.justOrEmpty(handlers.get(cmd)))
-      .switchIfEmpty(
-        Mono.defer(() -> Mono.just(update.message().from().id()))
-          .flatMap(sessionService::get)
-          .filter(step -> step != ProfileSetupStep.UNKNOWN)
-          .map(Enum::toString)
-          .map(handlers::get)
+      .switchIfEmpty(Mono.just(update)
+        .filter(up -> up.message() != null)
+        .map(up -> up.message().from().id())
+        .flatMap(sessionService::get)
+        .filter(step -> step != ProfileSetupStep.UNKNOWN)
+        .map(Enum::toString)
+        .map(handlers::get)
       )
       .defaultIfEmpty(handlers.get("/unknown_command"));
   }
