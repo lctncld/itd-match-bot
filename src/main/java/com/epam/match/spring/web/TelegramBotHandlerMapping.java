@@ -44,7 +44,10 @@ public class TelegramBotHandlerMapping implements HandlerMapping, InitializingBe
       .flatMap(update -> {
         String command = getCommand(update);
         log.info("Command: {}, Update: {}", command, update);
-        return Mono.zip(registry.getHandler(command, update), Mono.justOrEmpty(update));
+        return Mono.zip(
+          registry.getHandler(command, update),
+          Mono.justOrEmpty(update)
+        );
       })
       .map(tuple -> {
         HandlerMethod handlerMethod = tuple.getT1();
@@ -107,7 +110,14 @@ public class TelegramBotHandlerMapping implements HandlerMapping, InitializingBe
       log.info("String {} is not a command", text);
     }
     return isCommand
-      ? text
+      ? stripPathVariable(text)
       : null;
+  }
+
+  private String stripPathVariable(String command) {
+    boolean hasPathVariable = command.matches("(/.+/)(\\d+)");
+    return hasPathVariable
+      ? command.replaceFirst("(\\d+)", "")
+      : command;
   }
 }

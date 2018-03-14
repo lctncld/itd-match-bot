@@ -30,11 +30,11 @@ public class Repository {
   }
 
   public Mono<Boolean> isLikedBy(String who, String whom) {
-    return commands.sismember(Keys.likes(whom), who);
+    return commands.sismember(Keys.likes(who), whom);
   }
 
   public Mono<Boolean> isDislikedBy(String who, String whom) {
-    return commands.sismember(Keys.dislikes(whom), who);
+    return commands.sismember(Keys.dislikes(who), whom);
   }
 
   public Mono<Contact> getContact(String id) {

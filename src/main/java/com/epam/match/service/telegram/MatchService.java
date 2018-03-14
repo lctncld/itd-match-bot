@@ -57,7 +57,7 @@ public class MatchService {
       .defaultIfEmpty(new SendMessage(chatId, "Sorry, no one new is around"));
   }
 
-  @MessageMapping("/like")
+  @MessageMapping("/like/")
   public Flux<? extends BaseRequest> like(Update update) {
     CallbackQuery cb = update.callbackQuery();
     String matchId = getMatchIdFromCommand(cb.data());
@@ -98,7 +98,7 @@ public class MatchService {
     return parts[parts.length - 1];
   }
 
-  @MessageMapping("/dislike")
+  @MessageMapping("/dislike/")
   public Flux<? extends BaseRequest> dislike(Update update) {
     CallbackQuery cb = update.callbackQuery();
     String matchId = getMatchIdFromCommand(cb.data());
