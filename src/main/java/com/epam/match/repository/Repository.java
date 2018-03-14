@@ -40,17 +40,17 @@ public class Repository {
   public Mono<Contact> getContact(String id) {
     return commands.hgetall(Keys.contact(id))
       .map(keys -> Contact.builder()
-        .chatId(keys.get("chat_id"))
-        .firstName("first_name")
-        .lastName("last_name")
-        .phone("phone")
+        .chatId(keys.get(Keys.Contact.chatId()))
+        .firstName(keys.get(Keys.Contact.firstName()))
+        .lastName(keys.get(Keys.Contact.lastName()))
+        .phone(keys.get(Keys.Contact.phone()))
         .build());
   }
 
   public Mono<Match> getMatchById(String id) {
     return Flux.zip(
       commands.get(Keys.image(id)),
-      commands.hget(Keys.contact(id), "first_name")
+      commands.hget(Keys.contact(id), Keys.Contact.firstName())
     )
       .next()
       .map(tuple -> Match.builder()
@@ -62,7 +62,7 @@ public class Repository {
   }
 
   public Mono<String> getSearchProfileAsString(String id) {
-    return commands.hgetall(Keys.user(id))
+    return commands.hgetall(Keys.profile(id))
       .filter(profile -> !profile.isEmpty())
       .map(profile -> profile.entrySet().stream()
         .map(entry -> entry.getKey() + ":" + entry.getValue())
@@ -71,40 +71,40 @@ public class Repository {
   }
 
   public Mono<String> getPhone(String id) {
-    return commands.hget(Keys.contact(id), "phone");
+    return commands.hget(Keys.contact(id), Keys.Contact.phone());
   }
 
   public Mono<Void> setAge(String id, Integer age) {
-    return commands.hmset(Keys.user(id), Map.of("age", age.toString()))
+    return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.age(), age.toString()))
       .then();
   }
 
   public Mono<Void> setGender(String id, Gender gender) {
-    return commands.hmset(Keys.user(id), Map.of("gender", gender.toString()))
+    return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.gender(), gender.toString()))
       .then();
   }
 
   public Mono<Void> setMatchGender(String id, Gender gender) {
-    return commands.hmset(Keys.user(id), Map.of("matchGender", gender.toString()))
+    return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.matchGender(), gender.toString()))
       .then();
   }
 
   public Mono<Void> setMatchMinAge(String id, Integer age) {
-    return commands.hmset(Keys.user(id), Map.of("matchMinAge", age.toString()))
+    return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.matchMinAge(), age.toString()))
       .then();
   }
 
   public Mono<Void> setMatchMaxAge(String id, Integer age) {
-    return commands.hmset(Keys.user(id), Map.of("matchMaxAge", age.toString()))
+    return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.matchMaxAge(), age.toString()))
       .then();
   }
 
   public Mono<Void> setContact(String id, Contact contact) {
     return commands.hmset(Keys.contact(id), new HashMap<>() {{
-      put("phone", contact.getPhone());
-      put("first_name", contact.getFirstName());
-      put("last_name", contact.getLastName());
-      put("chat_id", contact.getChatId());
+      put(Keys.Contact.phone(), contact.getPhone());
+      put(Keys.Contact.firstName(), contact.getFirstName());
+      put(Keys.Contact.lastName(), contact.getLastName());
+      put(Keys.Contact.chatId(), contact.getChatId());
     }})
       .then();
   }
@@ -116,7 +116,7 @@ public class Repository {
 
   private static class Keys {
 
-    public static String user(Object id) {
+    public static String profile(Object id) {
       return id + ":profile";
     }
 
@@ -134,6 +134,48 @@ public class Repository {
 
     public static String contact(Object id) {
       return id + ":contact";
+    }
+
+    private static class Contact {
+
+      public static String firstName() {
+        return "first_name";
+      }
+
+      public static String lastName() {
+        return "last_name";
+      }
+
+      public static String chatId() {
+        return "chat_id";
+      }
+
+      public static String phone() {
+        return "phone";
+      }
+    }
+
+    private static class Profile {
+
+      public static String age() {
+        return "age";
+      }
+
+      public static String gender() {
+        return "gender";
+      }
+
+      public static String matchGender() {
+        return "matchGender";
+      }
+
+      public static String matchMinAge() {
+        return "matchMinAge";
+      }
+
+      public static String matchMaxAge() {
+        return "matchMaxAge";
+      }
     }
   }
 

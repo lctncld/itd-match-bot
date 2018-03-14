@@ -16,7 +16,6 @@ import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
 import com.pengrad.telegrambot.request.SendContact;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -70,8 +69,9 @@ public class MatchService {
           new EditMessageReplyMarkup(chatId, cb.message().messageId())
             .replyMarkup(new InlineKeyboardMarkup())
         )
-//        shareContacts(myId.toString(), matchId)
-//        suggestFromCallback(update)
+          .cast(BaseRequest.class)
+          .concatWith(shareContacts(myId.toString(), matchId))
+          .concatWith(suggestFromCallback(update))
       );
   }
 
@@ -107,6 +107,8 @@ public class MatchService {
         new AnswerCallbackQuery(cb.id()),
         new EditMessageReplyMarkup(cb.message().chat().id(), cb.message().messageId())
           .replyMarkup(new InlineKeyboardMarkup())
-      ));
+      ))
+      .cast(BaseRequest.class)
+      .concatWith(suggestFromCallback(update));
   }
 }
