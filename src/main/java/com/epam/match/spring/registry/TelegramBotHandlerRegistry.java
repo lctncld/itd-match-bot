@@ -30,7 +30,7 @@ public class TelegramBotHandlerRegistry {
   public Mono<HandlerMethod> getHandler(String command, Update update) {
     log.info("getting handler for {}", command);
     return Mono.justOrEmpty(command)
-      .map(handlers::get)
+      .flatMap(cmd -> Mono.justOrEmpty(handlers.get(cmd)))
       .switchIfEmpty(
         Mono.defer(() -> Mono.just(update.message().from().id()))
           .flatMap(sessionService::get)
