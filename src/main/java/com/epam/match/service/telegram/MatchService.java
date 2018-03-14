@@ -1,9 +1,10 @@
 package com.epam.match.service.telegram;
 
-import com.epam.match.repository.Repository;
 import com.epam.match.domain.Contact;
+import com.epam.match.repository.Repository;
 import com.epam.match.service.match.FindMatchService;
-import com.pengrad.telegrambot.TelegramBot;
+import com.epam.match.spring.annotation.MessageMapping;
+import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
@@ -15,37 +16,34 @@ import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
 import com.pengrad.telegrambot.request.SendContact;
 import com.pengrad.telegrambot.request.SendMessage;
 import com.pengrad.telegrambot.request.SendPhoto;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-@Service
+@TelegramBotController
 public class MatchService {
 
   private final FindMatchService findMatchService;
 
   private final Repository repository;
 
-  private final TelegramBot bot;
-
-  public MatchService(FindMatchService findMatchService, Repository repository, TelegramBot bot) {
+  public MatchService(FindMatchService findMatchService, Repository repository) {
     this.findMatchService = findMatchService;
     this.repository = repository;
-    this.bot = bot;
   }
 
-  public Mono<Void> suggest(Update update) {
+  @MessageMapping("/roll")
+  public Mono<? extends BaseRequest> suggest(Update update) {
     Message message = update.message();
     return suggest(message.chat().id(), message.from().id());
   }
 
-  public Mono<Void> suggestFromCallback(Update update) {
+  private Mono<? extends BaseRequest> suggestFromCallback(Update update) {
     CallbackQuery cb = update.callbackQuery();
     return suggest(cb.message().chat().id(), cb.from().id());
   }
 
   @SuppressWarnings("unchecked") // FIXME: Vasya, you can fix this
-  private Mono<Void> suggest(Long chatId, Integer userId) {
+  private Mono<? extends BaseRequest> suggest(Long chatId, Integer userId) {
     return findMatchService.next(userId)
       .map(match -> new SendPhoto(chatId, match.getImage())
         .caption(match.getName())
@@ -55,28 +53,29 @@ public class MatchService {
         }))
       )
       .cast(BaseRequest.class)
-      .defaultIfEmpty(new SendMessage(chatId, "Sorry, no one new is around"))
-      .map(bot::execute)
-      .then();
+      .defaultIfEmpty(new SendMessage(chatId, "Sorry, no one new is around"));
   }
 
-  public Mono<Void> like(Update update) {
+  @MessageMapping("/like/")
+  public Flux<? extends BaseRequest> like(Update update) {
     CallbackQuery cb = update.callbackQuery();
     String matchId = getMatchIdFromCommand(cb.data());
     Long chatId = cb.message().chat().id();
     Integer myId = cb.from().id();
     return repository.like(myId.toString(), matchId)
-      .thenMany(Flux.just(
-        new AnswerCallbackQuery(cb.id()),
-        new EditMessageReplyMarkup(chatId, cb.message().messageId())
-          .replyMarkup(new InlineKeyboardMarkup())
-      ))
-      .map(bot::execute)
-      .then(shareContacts(myId.toString(), matchId))
-      .then(suggestFromCallback(update));
+      .thenMany(
+        Flux.just(
+          new AnswerCallbackQuery(cb.id()),
+          new EditMessageReplyMarkup(chatId, cb.message().messageId())
+            .replyMarkup(new InlineKeyboardMarkup())
+        )
+          .cast(BaseRequest.class)
+          .concatWith(shareContacts(myId.toString(), matchId))
+          .concatWith(suggestFromCallback(update))
+      );
   }
 
-  private Mono<Void> shareContacts(String myId, String matchId) {
+  private Flux<? extends BaseRequest> shareContacts(String myId, String matchId) {
     return repository.isLikedBy(myId, matchId)
       .filter(Boolean::valueOf)
       .flatMapMany(done -> Flux.zip(
@@ -91,9 +90,7 @@ public class MatchService {
           new SendMessage(match.getChatId(), String.format("Hey, %s is interested in you!", me.getFirstName())),
           new SendContact(match.getChatId(), me.getPhone(), me.getFirstName()).lastName(me.getLastName())
         );
-      })
-      .map(bot::execute)
-      .then();
+      });
   }
 
   private String getMatchIdFromCommand(String command) {
@@ -101,8 +98,8 @@ public class MatchService {
     return parts[parts.length - 1];
   }
 
-
-  public Mono<Void> dislike(Update update) {
+  @MessageMapping("/dislike/")
+  public Flux<? extends BaseRequest> dislike(Update update) {
     CallbackQuery cb = update.callbackQuery();
     String matchId = getMatchIdFromCommand(cb.data());
     return repository.dislike(cb.from().id().toString(), matchId)
@@ -111,7 +108,7 @@ public class MatchService {
         new EditMessageReplyMarkup(cb.message().chat().id(), cb.message().messageId())
           .replyMarkup(new InlineKeyboardMarkup())
       ))
-      .map(bot::execute)
-      .then(suggestFromCallback(update));
+      .cast(BaseRequest.class)
+      .concatWith(suggestFromCallback(update));
   }
 }

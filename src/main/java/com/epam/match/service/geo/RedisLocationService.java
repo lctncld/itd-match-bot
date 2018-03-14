@@ -39,7 +39,7 @@ public class RedisLocationService implements LocationService {
       GeoArgs.Unit.km
     )
       .filter(user -> !user.equals(toWhom))
-      .doOnNext(user -> log.info("Found user {} near {}", user, toWhom));
+      .doOnNext(user -> log.info("Found profile {} near {}", user, toWhom));
   }
 
   private static String key() {
