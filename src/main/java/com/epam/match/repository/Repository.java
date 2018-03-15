@@ -21,12 +21,16 @@ public class Repository {
     this.commands = commands;
   }
 
-  public Mono<Long> like(String who, String whom) {
-    return commands.sadd(Keys.likes(who), whom);
+  public Mono<Void> like(String who, String whom) {
+    return commands.sadd(Keys.likes(who), whom)
+      .and(commands.lpush(Keys.seen(who), whom))
+      .then();
   }
 
-  public Mono<Long> dislike(String who, String whom) {
-    return commands.sadd(Keys.dislikes(who), whom);
+  public Mono<Void> dislike(String who, String whom) {
+    return commands.sadd(Keys.dislikes(who), whom)
+      .and(commands.lpush(Keys.seen(who), whom))
+      .then();
   }
 
   public Mono<Boolean> isLikedBy(String who, String whom) {
@@ -35,6 +39,14 @@ public class Repository {
 
   public Mono<Boolean> isDislikedBy(String who, String whom) {
     return commands.sismember(Keys.dislikes(who), whom);
+  }
+
+  public Mono<Boolean> seen(String who, String whom) {
+    return isLikedBy(who, whom)
+      .filter(Boolean::valueOf)
+      .switchIfEmpty(isDislikedBy(who, whom))
+      .filter(Boolean::valueOf)
+      .defaultIfEmpty(false);
   }
 
   public Mono<Contact> getContact(String id) {
@@ -126,6 +138,10 @@ public class Repository {
 
     public static String likes(Object id) {
       return id + ":likes";
+    }
+
+    public static String seen(Object id) {
+      return id + ":seen";
     }
 
     public static String dislikes(Object id) {

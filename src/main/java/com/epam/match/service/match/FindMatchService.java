@@ -24,10 +24,7 @@ public class FindMatchService {
 
   public Mono<Match> next(Integer userId) {
     return locationService.nearbyUsers(userId.toString(), 10.0)
-      .filterWhen(matchId -> repository.isLikedBy(userId.toString(), matchId)
-        .map(negate())
-      )
-      .filterWhen(matchId -> repository.isDislikedBy(userId.toString(), matchId)
+      .filterWhen(matchId -> repository.seen(userId.toString(), matchId)
         .map(negate())
       )
       .doOnNext(matchId -> log.info("Match for {} is {}", userId, matchId))
