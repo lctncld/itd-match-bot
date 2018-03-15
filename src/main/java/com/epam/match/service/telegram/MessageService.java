@@ -18,8 +18,13 @@ public class MessageService {
   @MessageMapping("/unknown_command")
   public Mono<BaseRequest> unknownCommand(Update update) {
     Message message = update.message();
+
     if (message == null) {
-      message = update.callbackQuery().message();
+      if (update.callbackQuery() != null) {
+        message = update.callbackQuery().message();
+      } else if (update.editedMessage() != null) {
+        message = update.editedMessage();
+      }
     }
     return Mono.just(
       new SendMessage(message.chat().id(), "Unrecognized command. Try asking for /help")
