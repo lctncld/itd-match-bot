@@ -92,6 +92,7 @@ public class RedisPersistentStore implements PersistentStore {
           Optional<String> maxAge = Optional.ofNullable(keys.get(Keys.Profile.matchMaxAge()));
           Optional<String> matchGender = Optional.ofNullable(keys.get(Keys.Profile.matchGender()));
           return Profile.builder()
+            .id(id)
             .age(age.map(Integer::valueOf))
             .gender(myGender.map(Gender::valueOf))
             .matchMinAge(minAge.map(Integer::valueOf))

@@ -9,6 +9,8 @@ import java.util.Optional;
 @Builder
 public class Profile {
 
+  private final String id;
+
   private final Optional<Integer> age;
 
   private final Optional<Gender> gender;
@@ -18,4 +20,15 @@ public class Profile {
   private final Optional<Integer> matchMaxAge;
 
   private final Optional<Gender> matchGender;
+
+  public static Profile empty(String id) {
+    return Profile.builder()
+      .id(id)
+      .age(Optional.empty())
+      .gender(Optional.empty())
+      .matchMinAge(Optional.empty())
+      .matchMaxAge(Optional.empty())
+      .matchGender(Optional.empty())
+      .build();
+  }
 }
