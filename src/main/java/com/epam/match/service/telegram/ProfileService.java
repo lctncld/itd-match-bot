@@ -33,10 +33,14 @@ public class ProfileService {
 
   private final Repository repository;
 
-  public ProfileService(LocationService locationService, SessionService sessionService, Repository repository) {
+  private final DirectCallService directCallService;
+
+  public ProfileService(LocationService locationService, SessionService sessionService, Repository repository,
+    DirectCallService directCallService) {
     this.locationService = locationService;
     this.sessionService = sessionService;
     this.repository = repository;
+    this.directCallService = directCallService;
   }
 
   @MessageMapping("/profile")
@@ -213,23 +217,9 @@ public class ProfileService {
       .chatId(message.chat().id().toString())
       .build()
     )
-      //      .then(setDefaultImage(id)) FIXME
+      .then(directCallService.setDefaultImage(id))
       .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"));
   }
-
-  //  public Mono<Void> setDefaultImage(Integer userId) {
-  //    return Mono.just(userId)
-  //      .map(GetUserProfilePhotos::new)
-  //      .map(bot::execute)
-  //      .map(GetUserProfilePhotosResponse::photos)
-  //      .filter(p -> p.totalCount() > 0)
-  //      .map(UserProfilePhotos::photos)
-  //      .map(p -> p[0]) // Cool
-  //      .map(p -> p[0]) // API
-  //      .map(PhotoSize::fileId)
-  //      .flatMap(image -> repository.setImage(userId.toString(), image))
-  //      .then();
-  //  }
 
   @MessageMapping("/photo")
   public Mono<? extends BaseRequest> setImage(Update update) {
