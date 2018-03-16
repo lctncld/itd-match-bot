@@ -1,5 +1,6 @@
 package com.epam.match.service.telegram;
 
+import com.epam.match.EmojiResolver;
 import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.service.session.SessionService;
 import com.epam.match.spring.annotation.MessageMapping;
@@ -32,9 +33,9 @@ public class QuestionService {
       new SendMessage(chatId, "Who are you?")
         .replyMarkup(new InlineKeyboardMarkup(
           new InlineKeyboardButton[] {
-            new InlineKeyboardButton("M")
+            new InlineKeyboardButton(EmojiResolver.man())
               .callbackData("/profile/me/gender/male"),
-            new InlineKeyboardButton("F")
+            new InlineKeyboardButton(EmojiResolver.woman())
               .callbackData("/profile/me/gender/female")
           }
         )),
@@ -63,11 +64,11 @@ public class QuestionService {
       new SendMessage(chatId, "Who do you wanna find?")
         .replyMarkup(new InlineKeyboardMarkup(
           new InlineKeyboardButton[] {
-            new InlineKeyboardButton("M")
+            new InlineKeyboardButton(EmojiResolver.man())
               .callbackData("/profile/match/gender/male"),
-            new InlineKeyboardButton("F")
+            new InlineKeyboardButton(EmojiResolver.woman())
               .callbackData("/profile/match/gender/female"),
-            new InlineKeyboardButton("Both")
+            new InlineKeyboardButton(EmojiResolver.both())
               .callbackData("/profile/match/gender/both")
           })
         ),
