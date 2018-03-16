@@ -9,13 +9,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @Service
-public class RedisLocationService implements LocationService {
+public class RedisGeoLocationService implements GeoLocationService {
 
-  private final Logger log = LoggerFactory.getLogger(RedisLocationService.class);
+  private final Logger log = LoggerFactory.getLogger(RedisGeoLocationService.class);
 
   private final RedisReactiveCommands<String, String> commands;
 
-  public RedisLocationService(RedisReactiveCommands<String, String> commands) {
+  public RedisGeoLocationService(RedisReactiveCommands<String, String> commands) {
     this.commands = commands;
   }
 

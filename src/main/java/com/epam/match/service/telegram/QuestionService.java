@@ -12,7 +12,6 @@ import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.DeleteMessage;
 import com.pengrad.telegrambot.request.SendMessage;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 @TelegramBotController

@@ -1,7 +1,7 @@
 package com.epam.match.service.telegram;
 
 import com.epam.match.domain.Contact;
-import com.epam.match.repository.Repository;
+import com.epam.match.service.store.PersistentStore;
 import com.epam.match.service.match.FindMatchService;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
@@ -24,11 +24,11 @@ public class MatchService {
 
   private final FindMatchService findMatchService;
 
-  private final Repository repository;
+  private final PersistentStore store;
 
-  public MatchService(FindMatchService findMatchService, Repository repository) {
+  public MatchService(FindMatchService findMatchService, PersistentStore store) {
     this.findMatchService = findMatchService;
-    this.repository = repository;
+    this.store = store;
   }
 
   @MessageMapping("/roll")
@@ -62,7 +62,7 @@ public class MatchService {
     String matchId = getMatchIdFromCommand(cb.data());
     Long chatId = cb.message().chat().id();
     Integer myId = cb.from().id();
-    return repository.like(myId.toString(), matchId)
+    return store.like(myId.toString(), matchId)
       .thenMany(
         Flux.just(
           new AnswerCallbackQuery(cb.id()),
@@ -76,11 +76,11 @@ public class MatchService {
   }
 
   private Flux<? extends BaseRequest> shareContacts(String myId, String matchId) {
-    return repository.isLikedBy(myId, matchId)
+    return store.isLikedBy(myId, matchId)
       .filter(Boolean::valueOf)
       .flatMapMany(done -> Flux.zip(
-        repository.getContact(matchId),
-        repository.getContact(myId)
+        store.getContact(matchId),
+        store.getContact(myId)
       ))
       .flatMap(tuple -> {
         Contact match = tuple.getT1();
@@ -102,7 +102,7 @@ public class MatchService {
   public Flux<? extends BaseRequest> dislike(Update update) {
     CallbackQuery cb = update.callbackQuery();
     String matchId = getMatchIdFromCommand(cb.data());
-    return repository.dislike(cb.from().id().toString(), matchId)
+    return store.dislike(cb.from().id().toString(), matchId)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new EditMessageReplyMarkup(cb.message().chat().id(), cb.message().messageId())

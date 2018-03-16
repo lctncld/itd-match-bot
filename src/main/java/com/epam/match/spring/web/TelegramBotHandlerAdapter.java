@@ -1,10 +1,8 @@
 package com.epam.match.spring.web;
 
-import com.epam.match.spring.registry.TelegramBotHandlerRegistry;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.request.BaseRequest;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.web.method.HandlerMethod;
@@ -19,11 +17,11 @@ import java.lang.reflect.Method;
 @Component
 public class TelegramBotHandlerAdapter implements HandlerAdapter {
 
-  @Autowired
-  private TelegramBotHandlerRegistry registry;
+  private final TelegramBot bot;
 
-  @Autowired
-  private TelegramBot bot;
+  public TelegramBotHandlerAdapter(TelegramBot bot) {
+    this.bot = bot;
+  }
 
   @Override
   public boolean supports(Object handler) {
@@ -45,7 +43,6 @@ public class TelegramBotHandlerAdapter implements HandlerAdapter {
     Update update = updateHandler.getUpdate();
 
     Object result = ReflectionUtils.invokeMethod(method, bean, update);
-//    HandlerResult handlerResult = new HandlerResult(handler, result, handlerMethod.getReturnType());
 
     if (result instanceof Flux) {
       return ((Flux<BaseRequest>) result)
