@@ -160,7 +160,6 @@ public class ProfileService {
     return store.setMatchGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, "Now looking for " + gender.toString()),
         profileMenu(chatId, "Anything else?")
       ));
   }
@@ -181,7 +180,6 @@ public class ProfileService {
     return store.setGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, String.format("You are %s, understood", gender.toString())),
         profileMenu(chatId, "Anything else?")
       ));
   }
