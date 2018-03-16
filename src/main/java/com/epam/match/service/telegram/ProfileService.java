@@ -1,10 +1,10 @@
 package com.epam.match.service.telegram;
 
 import com.epam.match.domain.Gender;
-import com.epam.match.service.store.PersistentStore;
 import com.epam.match.service.geo.GeoLocationService;
 import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.service.session.SessionService;
+import com.epam.match.service.store.PersistentStore;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.CallbackQuery;
@@ -61,8 +61,34 @@ public class ProfileService {
   }
 
   private Mono<String> getProfileAsString(Integer userId) {
-    return store.getSearchProfileAsString(userId.toString())
-      .switchIfEmpty(Mono.just("Your profile appears to be blank, tap these buttons to fill it!"));
+    return store.getSearchProfile(userId.toString())
+      .map(profile -> {
+          boolean selfNotEmpty = profile.getAge().isPresent() || profile.getGender().isPresent();
+          boolean matchNotEmpty = profile.getMatchMinAge().isPresent()
+            || profile.getMatchMaxAge().isPresent()
+            || profile.getMatchGender().isPresent();
+          boolean minAndMaxAgeSpecified = profile.getMatchMinAge().isPresent() && profile.getMatchMaxAge().isPresent();
+
+          StringBuilder out = new StringBuilder();
+
+          if (selfNotEmpty) {
+            out.append("You are: ")
+              .append(profile.getAge().map(String::valueOf).orElse(""))
+              .append(profile.getGender().map(Gender::getEmoji).orElse(""));
+          }
+
+          if (matchNotEmpty) {
+            out.append("\nLooking for:")
+              .append(profile.getMatchMinAge().map(String::valueOf).orElse(""))
+              .append(minAndMaxAgeSpecified ? "-" : "")
+              .append(profile.getMatchMaxAge().map(String::valueOf).orElse(""))
+              .append(profile.getMatchGender().map(Gender::getEmoji).orElse(""));
+          }
+
+          return out.toString();
+        }
+      )
+      .switchIfEmpty(Mono.just("Your profile appears to be blank"));
   }
 
   private SendMessage profileMenu(Long chatId, String message) {
