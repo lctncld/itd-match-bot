@@ -6,7 +6,6 @@ import com.epam.match.spring.annotation.TelegramBotController;
 import com.epam.match.spring.registry.TelegramBotHandlerRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -20,10 +19,13 @@ import java.util.Map;
 @Slf4j
 public class TelegramBotControllerBeanPostProcessor implements BeanPostProcessor {
 
-  @Autowired
-  private TelegramBotHandlerRegistry registry;
+  private final TelegramBotHandlerRegistry registry;
 
   private final Map<String, Class> controllers = new HashMap<>();
+
+  public TelegramBotControllerBeanPostProcessor(TelegramBotHandlerRegistry registry) {
+    this.registry = registry;
+  }
 
   @Override
   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {

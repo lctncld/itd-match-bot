@@ -1,4 +1,4 @@
-package com.epam.match.repository;
+package com.epam.match.service.store;
 
 import com.epam.match.domain.Contact;
 import com.epam.match.domain.Gender;
@@ -13,34 +13,39 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @Component
-public class Repository {
+public class RedisPersistentStore implements PersistentStore {
 
   private final RedisReactiveCommands<String, String> commands;
 
-  public Repository(RedisReactiveCommands<String, String> commands) {
+  public RedisPersistentStore(RedisReactiveCommands<String, String> commands) {
     this.commands = commands;
   }
 
+  @Override
   public Mono<Void> like(String who, String whom) {
     return commands.sadd(Keys.likes(who), whom)
       .and(commands.lpush(Keys.seen(who), whom))
       .then();
   }
 
+  @Override
   public Mono<Void> dislike(String who, String whom) {
     return commands.sadd(Keys.dislikes(who), whom)
       .and(commands.lpush(Keys.seen(who), whom))
       .then();
   }
 
+  @Override
   public Mono<Boolean> isLikedBy(String who, String whom) {
     return commands.sismember(Keys.likes(who), whom);
   }
 
+  @Override
   public Mono<Boolean> isDislikedBy(String who, String whom) {
     return commands.sismember(Keys.dislikes(who), whom);
   }
 
+  @Override
   public Mono<Boolean> seen(String who, String whom) {
     return isLikedBy(who, whom)
       .filter(Boolean::valueOf)
@@ -49,6 +54,7 @@ public class Repository {
       .defaultIfEmpty(false);
   }
 
+  @Override
   public Mono<Contact> getContact(String id) {
     return commands.hgetall(Keys.contact(id))
       .map(keys -> Contact.builder()
@@ -59,6 +65,7 @@ public class Repository {
         .build());
   }
 
+  @Override
   public Mono<Match> getMatchById(String id) {
     return Flux.zip(
       commands.get(Keys.image(id)),
@@ -73,6 +80,7 @@ public class Repository {
       );
   }
 
+  @Override
   public Mono<String> getSearchProfileAsString(String id) {
     return commands.hgetall(Keys.profile(id))
       .filter(profile -> !profile.isEmpty())
@@ -82,35 +90,42 @@ public class Repository {
       );
   }
 
+  @Override
   public Mono<String> getPhone(String id) {
     return commands.hget(Keys.contact(id), Keys.Contact.phone());
   }
 
+  @Override
   public Mono<Void> setAge(String id, Integer age) {
     return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.age(), age.toString()))
       .then();
   }
 
+  @Override
   public Mono<Void> setGender(String id, Gender gender) {
     return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.gender(), gender.toString()))
       .then();
   }
 
+  @Override
   public Mono<Void> setMatchGender(String id, Gender gender) {
     return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.matchGender(), gender.toString()))
       .then();
   }
 
+  @Override
   public Mono<Void> setMatchMinAge(String id, Integer age) {
     return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.matchMinAge(), age.toString()))
       .then();
   }
 
+  @Override
   public Mono<Void> setMatchMaxAge(String id, Integer age) {
     return commands.hmset(Keys.profile(id), Map.of(Keys.Profile.matchMaxAge(), age.toString()))
       .then();
   }
 
+  @Override
   public Mono<Void> setContact(String id, Contact contact) {
     return commands.hmset(Keys.contact(id), new HashMap<>() {{
       put(Keys.Contact.phone(), contact.getPhone());
@@ -121,6 +136,7 @@ public class Repository {
       .then();
   }
 
+  @Override
   public Mono<Void> setImage(String id, String imageId) {
     return commands.set(Keys.image(id), imageId)
       .then();

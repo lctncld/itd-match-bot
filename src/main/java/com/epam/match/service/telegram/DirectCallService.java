@@ -1,6 +1,6 @@
 package com.epam.match.service.telegram;
 
-import com.epam.match.repository.Repository;
+import com.epam.match.service.store.PersistentStore;
 import com.pengrad.telegrambot.TelegramBot;
 import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.UserProfilePhotos;
@@ -14,11 +14,11 @@ public class DirectCallService {
 
   private final TelegramBot bot;
 
-  private final Repository repository;
+  private final PersistentStore store;
 
-  public DirectCallService(TelegramBot bot, Repository repository) {
+  public DirectCallService(TelegramBot bot, PersistentStore store) {
     this.bot = bot;
-    this.repository = repository;
+    this.store = store;
   }
 
   public Mono<Void> setDefaultImage(Integer userId) {
@@ -31,7 +31,7 @@ public class DirectCallService {
       .map(p -> p[0]) // Cool
       .map(p -> p[0]) // API
       .map(PhotoSize::fileId)
-      .flatMap(image -> repository.setImage(userId.toString(), image))
+      .flatMap(image -> store.setImage(userId.toString(), image))
       .then();
   }
 }

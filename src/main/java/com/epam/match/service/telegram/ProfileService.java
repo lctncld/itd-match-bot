@@ -1,8 +1,8 @@
 package com.epam.match.service.telegram;
 
 import com.epam.match.domain.Gender;
-import com.epam.match.repository.Repository;
-import com.epam.match.service.geo.LocationService;
+import com.epam.match.service.store.PersistentStore;
+import com.epam.match.service.geo.GeoLocationService;
 import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.service.session.SessionService;
 import com.epam.match.spring.annotation.MessageMapping;
@@ -27,19 +27,19 @@ import reactor.core.publisher.Mono;
 @TelegramBotController
 public class ProfileService {
 
-  private final LocationService locationService;
+  private final GeoLocationService locationService;
 
   private final SessionService sessionService;
 
-  private final Repository repository;
+  private final PersistentStore store;
 
   private final DirectCallService directCallService;
 
-  public ProfileService(LocationService locationService, SessionService sessionService, Repository repository,
+  public ProfileService(GeoLocationService locationService, SessionService sessionService, PersistentStore store,
     DirectCallService directCallService) {
     this.locationService = locationService;
     this.sessionService = sessionService;
-    this.repository = repository;
+    this.store = store;
     this.directCallService = directCallService;
   }
 
@@ -47,7 +47,7 @@ public class ProfileService {
   public Mono<? extends BaseRequest> setupProfile(Update update) {
     Message message = update.message();
     Integer userId = message.from().id();
-    return repository.getPhone(userId.toString())
+    return store.getPhone(userId.toString())
       .single()
       .then(getProfileAsString(userId))
       .map(profile -> profileMenu(message.chat().id(), profile))
@@ -61,7 +61,7 @@ public class ProfileService {
   }
 
   private Mono<String> getProfileAsString(Integer userId) {
-    return repository.getSearchProfileAsString(userId.toString())
+    return store.getSearchProfileAsString(userId.toString())
       .switchIfEmpty(Mono.just("Your profile appears to be blank, tap these buttons to fill it!"));
   }
 
@@ -97,7 +97,7 @@ public class ProfileService {
     Integer userId = message.from().id();
     return Mono.just(message.text())
       .map(Integer::valueOf)
-      .flatMap(age -> repository.setAge(userId.toString(), age))
+      .flatMap(age -> store.setAge(userId.toString(), age))
       .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
       .onErrorReturn(ageValidationFailMessage(chatId));
@@ -131,7 +131,7 @@ public class ProfileService {
   private Flux<? extends BaseRequest> setMatchGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return repository.setMatchGender(cb.from().id().toString(), gender)
+    return store.setMatchGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, "Now looking for " + gender.toString()),
@@ -152,7 +152,7 @@ public class ProfileService {
   private Flux<? extends BaseRequest> setGender(Update update, Gender gender) {
     CallbackQuery cb = update.callbackQuery();
     Long chatId = cb.message().chat().id();
-    return repository.setGender(cb.from().id().toString(), gender)
+    return store.setGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
         new SendMessage(chatId, String.format("You are %s, understood", gender.toString())),
@@ -167,7 +167,7 @@ public class ProfileService {
     Integer userId = message.from().id();
     return Mono.just(message.text())
       .map(Integer::valueOf)
-      .flatMap(age -> repository.setMatchMinAge(userId.toString(), age))
+      .flatMap(age -> store.setMatchMinAge(userId.toString(), age))
       .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
       .onErrorReturn(ageValidationFailMessage(chatId));
@@ -180,7 +180,7 @@ public class ProfileService {
     Integer userId = message.from().id();
     return Mono.just(message.text())
       .map(Integer::valueOf)
-      .flatMap(age -> repository.setMatchMaxAge(userId.toString(), age))
+      .flatMap(age -> store.setMatchMaxAge(userId.toString(), age))
       .then(sessionService.clear(userId))
       .thenReturn(profileMenu(chatId, "Anything else?"))
       .onErrorReturn(ageValidationFailMessage(chatId));
@@ -210,7 +210,7 @@ public class ProfileService {
       return Mono.just(new SendMessage(message.chat().id(), "I don't believe you"));
     }
     Integer id = update.message().from().id();
-    return repository.setContact(id.toString(), com.epam.match.domain.Contact.builder()
+    return store.setContact(id.toString(), com.epam.match.domain.Contact.builder()
       .phone(contact.phoneNumber())
       .firstName(contact.firstName())
       .lastName(contact.lastName())
@@ -226,7 +226,7 @@ public class ProfileService {
     Message message = update.message();
     PhotoSize photo = message.photo()[0];
     String photoId = photo.fileId();
-    return repository.setImage(message.from().id().toString(), photoId)
+    return store.setImage(message.from().id().toString(), photoId)
       .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"));
   }
 }

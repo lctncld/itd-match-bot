@@ -13,7 +13,7 @@ import com.pengrad.telegrambot.request.SendMessage;
 import reactor.core.publisher.Mono;
 
 @TelegramBotController
-public class MessageService {
+public class SimpleReplyService {
 
   @MessageMapping("/unknown_command")
   public Mono<BaseRequest> unknownCommand(Update update) {

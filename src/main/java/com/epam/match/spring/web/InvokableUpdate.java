@@ -7,7 +7,7 @@ import org.springframework.web.method.HandlerMethod;
 
 @Data
 @Builder
-public class InvokableUpdate {
+class InvokableUpdate {
 
   private final HandlerMethod method;
 
