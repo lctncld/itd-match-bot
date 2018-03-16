@@ -1,10 +1,10 @@
 package com.epam.match.service.telegram;
 
 import com.epam.match.domain.Gender;
-import com.epam.match.service.store.PersistentStore;
 import com.epam.match.service.geo.GeoLocationService;
 import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.service.session.SessionService;
+import com.epam.match.service.store.PersistentStore;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.CallbackQuery;
@@ -61,8 +61,34 @@ public class ProfileService {
   }
 
   private Mono<String> getProfileAsString(Integer userId) {
-    return store.getSearchProfileAsString(userId.toString())
-      .switchIfEmpty(Mono.just("Your profile appears to be blank, tap these buttons to fill it!"));
+    return store.getSearchProfile(userId.toString())
+      .map(profile -> {
+          boolean selfNotEmpty = profile.getAge().isPresent() || profile.getGender().isPresent();
+          boolean matchNotEmpty = profile.getMatchMinAge().isPresent()
+            || profile.getMatchMaxAge().isPresent()
+            || profile.getMatchGender().isPresent();
+          boolean minAndMaxAgeSpecified = profile.getMatchMinAge().isPresent() && profile.getMatchMaxAge().isPresent();
+
+          StringBuilder out = new StringBuilder();
+
+          if (selfNotEmpty) {
+            out.append("You are: ")
+              .append(profile.getAge().map(String::valueOf).orElse(""))
+              .append(profile.getGender().map(Gender::getEmoji).orElse(""));
+          }
+
+          if (matchNotEmpty) {
+            out.append("\nLooking for: ")
+              .append(profile.getMatchMinAge().map(String::valueOf).orElse(""))
+              .append(minAndMaxAgeSpecified ? "-" : "")
+              .append(profile.getMatchMaxAge().map(String::valueOf).orElse(""))
+              .append(profile.getMatchGender().map(Gender::getEmoji).orElse(""));
+          }
+
+          return out.toString();
+        }
+      )
+      .switchIfEmpty(Mono.just("Your profile appears to be blank"));
   }
 
   private SendMessage profileMenu(Long chatId, String message) {
@@ -134,7 +160,6 @@ public class ProfileService {
     return store.setMatchGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, "Now looking for " + gender.toString()),
         profileMenu(chatId, "Anything else?")
       ));
   }
@@ -155,7 +180,6 @@ public class ProfileService {
     return store.setGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, String.format("You are %s, understood", gender.toString())),
         profileMenu(chatId, "Anything else?")
       ));
   }
@@ -228,5 +252,13 @@ public class ProfileService {
     String photoId = photo.fileId();
     return store.setImage(message.from().id().toString(), photoId)
       .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"));
+  }
+
+  @MessageMapping("/reset")
+  public Mono<? extends BaseRequest> resetProfile(Update update) {
+    Integer id = update.message().from().id();
+    return store.resetProfile(id.toString())
+      .then(locationService.delete(id.toString()))
+      .thenReturn(new SendMessage(update.message().chat().id(), "Your profile was cleared, want some /help?"));
   }
 }

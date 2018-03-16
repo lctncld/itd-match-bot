@@ -3,6 +3,7 @@ package com.epam.match.service.store;
 import com.epam.match.domain.Contact;
 import com.epam.match.domain.Gender;
 import com.epam.match.domain.Match;
+import com.epam.match.domain.Profile;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -10,7 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Component
 public class RedisPersistentStore implements PersistentStore {
@@ -81,12 +82,24 @@ public class RedisPersistentStore implements PersistentStore {
   }
 
   @Override
-  public Mono<String> getSearchProfileAsString(String id) {
+  public Mono<Profile> getSearchProfile(String id) {
     return commands.hgetall(Keys.profile(id))
-      .filter(profile -> !profile.isEmpty())
-      .map(profile -> profile.entrySet().stream()
-        .map(entry -> entry.getKey() + ":" + entry.getValue())
-        .collect(Collectors.joining(", "))
+      .filter(keys -> !keys.isEmpty())
+      .map(keys -> {
+          Optional<String> age = Optional.ofNullable(keys.get(Keys.Profile.age()));
+          Optional<String> myGender = Optional.ofNullable(keys.get(Keys.Profile.gender()));
+          Optional<String> minAge = Optional.ofNullable(keys.get(Keys.Profile.matchMinAge()));
+          Optional<String> maxAge = Optional.ofNullable(keys.get(Keys.Profile.matchMaxAge()));
+          Optional<String> matchGender = Optional.ofNullable(keys.get(Keys.Profile.matchGender()));
+          return Profile.builder()
+            .id(id)
+            .age(age.map(Integer::valueOf))
+            .gender(myGender.map(Gender::valueOf))
+            .matchMinAge(minAge.map(Integer::valueOf))
+            .matchMaxAge(maxAge.map(Integer::valueOf))
+            .matchGender(matchGender.map(Gender::valueOf))
+            .build();
+        }
       );
   }
 
@@ -142,7 +155,18 @@ public class RedisPersistentStore implements PersistentStore {
       .then();
   }
 
+  @Override
+  public Mono<Void> resetProfile(String id) {
+    return commands.keys(Keys.allUserKeys(id))
+      .flatMap(commands::del)
+      .then();
+  }
+
   private static class Keys {
+
+    public static String allUserKeys(Object id) {
+      return id + ":*";
+    }
 
     public static String profile(Object id) {
       return id + ":profile";

@@ -3,6 +3,7 @@ package com.epam.match.service.store;
 import com.epam.match.domain.Contact;
 import com.epam.match.domain.Gender;
 import com.epam.match.domain.Match;
+import com.epam.match.domain.Profile;
 import reactor.core.publisher.Mono;
 
 public interface PersistentStore {
@@ -21,7 +22,7 @@ public interface PersistentStore {
 
   Mono<Match> getMatchById(String id);
 
-  Mono<String> getSearchProfileAsString(String id);
+  Mono<Profile> getSearchProfile(String id);
 
   Mono<String> getPhone(String id);
 
@@ -38,4 +39,6 @@ public interface PersistentStore {
   Mono<Void> setContact(String id, Contact contact);
 
   Mono<Void> setImage(String id, String imageId);
+
+  Mono<Void> resetProfile(String id);
 }

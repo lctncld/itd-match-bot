@@ -7,5 +7,7 @@ public interface GeoLocationService {
 
   Mono<Void> update(String userId, Float latitude, Float longitude);
 
+  Mono<Void> delete(String userId);
+
   Flux<String> nearbyUsers(String toWhom, Double kilometers);
 }
