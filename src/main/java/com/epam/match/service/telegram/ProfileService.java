@@ -253,4 +253,12 @@ public class ProfileService {
     return store.setImage(message.from().id().toString(), photoId)
       .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"));
   }
+
+  @MessageMapping("/reset")
+  public Mono<? extends BaseRequest> resetProfile(Update update) {
+    Integer id = update.message().from().id();
+    return store.resetProfile(id.toString())
+      .then(locationService.delete(id.toString()))
+      .thenReturn(new SendMessage(update.message().chat().id(), "Your profile was cleared, want some /help?"));
+  }
 }

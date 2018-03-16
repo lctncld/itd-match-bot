@@ -31,6 +31,12 @@ public class RedisGeoLocationService implements GeoLocationService {
   }
 
   @Override
+  public Mono<Void> delete(String userId) {
+    return commands.zrem(key(), userId)
+      .then();
+  }
+
+  @Override
   public Flux<String> nearbyUsers(String toWhom, Double kilometers) {
     return commands.georadiusbymember(
       key(),

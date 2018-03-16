@@ -154,7 +154,18 @@ public class RedisPersistentStore implements PersistentStore {
       .then();
   }
 
+  @Override
+  public Mono<Void> resetProfile(String id) {
+    return commands.keys(Keys.allUserKeys(id))
+      .flatMap(commands::del)
+      .then();
+  }
+
   private static class Keys {
+
+    public static String allUserKeys(Object id) {
+      return id + ":*";
+    }
 
     public static String profile(Object id) {
       return id + ":profile";
