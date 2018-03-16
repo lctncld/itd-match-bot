@@ -41,4 +41,6 @@ public interface PersistentStore {
   Mono<Void> setImage(String id, String imageId);
 
   Mono<Void> resetProfile(String id);
+
+  Mono<String> undo(String id);
 }

@@ -118,4 +118,15 @@ public class MatchService {
       .cast(BaseRequest.class)
       .concatWith(suggestFromCallback(update));
   }
+
+  @MessageMapping("/undo")
+  public Mono<? extends BaseRequest> undo(Update update) {
+    Message message = update.message();
+    Long chatId = message.chat().id();
+    return store.undo(message.from().id().toString())
+      .flatMap(store::getMatchById)
+      .map(matchToPhotoCard(chatId))
+      .cast(BaseRequest.class)
+      .defaultIfEmpty(new SendMessage(chatId, "Nothing to undo"));
+  }
 }

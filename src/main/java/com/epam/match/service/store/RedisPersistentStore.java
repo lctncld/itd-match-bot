@@ -11,6 +11,7 @@ import reactor.core.publisher.Mono;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Component
@@ -160,6 +161,19 @@ public class RedisPersistentStore implements PersistentStore {
     return commands.keys(Keys.allUserKeys(id))
       .flatMap(commands::del)
       .then();
+  }
+
+  @Override
+  public Mono<String> undo(String id) {
+    return commands.lpop(Keys.seen(id))
+      .filter(Objects::nonNull)
+      .flatMap(lastSeen -> commands.srem(Keys.likes((id)), lastSeen)
+        .filter(deleted -> deleted != 0)
+        .switchIfEmpty(commands.srem(Keys.dislikes((id)), lastSeen))
+        .filter(deleted -> deleted != 0)
+        .map(deleted -> lastSeen)
+      )
+      .switchIfEmpty(Mono.empty());
   }
 
   private static class Keys {
