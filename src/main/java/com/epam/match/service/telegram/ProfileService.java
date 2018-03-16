@@ -78,7 +78,7 @@ public class ProfileService {
           }
 
           if (matchNotEmpty) {
-            out.append("\nLooking for:")
+            out.append("\nLooking for: ")
               .append(profile.getMatchMinAge().map(String::valueOf).orElse(""))
               .append(minAndMaxAgeSpecified ? "-" : "")
               .append(profile.getMatchMaxAge().map(String::valueOf).orElse(""))
