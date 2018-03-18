@@ -1,8 +1,9 @@
 package com.epam.match.service.telegram;
 
+import com.epam.match.MessageSourceAdapter;
 import com.epam.match.domain.Contact;
-import com.epam.match.service.store.PersistentStore;
 import com.epam.match.service.match.FindMatchService;
+import com.epam.match.service.store.PersistentStore;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.CallbackQuery;
@@ -10,12 +11,7 @@ import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
-import com.pengrad.telegrambot.request.AnswerCallbackQuery;
-import com.pengrad.telegrambot.request.BaseRequest;
-import com.pengrad.telegrambot.request.EditMessageReplyMarkup;
-import com.pengrad.telegrambot.request.SendContact;
-import com.pengrad.telegrambot.request.SendMessage;
-import com.pengrad.telegrambot.request.SendPhoto;
+import com.pengrad.telegrambot.request.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -26,9 +22,13 @@ public class MatchService {
 
   private final PersistentStore store;
 
-  public MatchService(FindMatchService findMatchService, PersistentStore store) {
+  private final MessageSourceAdapter messageSource;
+
+  public MatchService(FindMatchService findMatchService, PersistentStore store,
+    MessageSourceAdapter messageSource) {
     this.findMatchService = findMatchService;
     this.store = store;
+    this.messageSource = messageSource;
   }
 
   @MessageMapping("/roll")
@@ -48,8 +48,8 @@ public class MatchService {
       .map(match -> new SendPhoto(chatId, match.getImage())
         .caption(match.getName())
         .replyMarkup(new InlineKeyboardMarkup(new InlineKeyboardButton[] {
-          new InlineKeyboardButton("+").callbackData("/like/" + match.getId()),
-          new InlineKeyboardButton("-").callbackData("/dislike/" + match.getId())
+          new InlineKeyboardButton(messageSource.get("match.button.like")).callbackData("/like/" + match.getId()),
+          new InlineKeyboardButton(messageSource.get("match.button.dislike")).callbackData("/dislike/" + match.getId())
         }))
       )
       .cast(BaseRequest.class)
@@ -87,7 +87,7 @@ public class MatchService {
         Contact me = tuple.getT2();
         return Flux.just(
           new SendContact(me.getChatId(), match.getPhone(), match.getFirstName()).lastName(match.getLastName()),
-          new SendMessage(match.getChatId(), String.format("Hey, %s is interested in you!", me.getFirstName())),
+          new SendMessage(match.getChatId(), messageSource.get("match.on.mutual.like", me.getFirstName())),
           new SendContact(match.getChatId(), me.getPhone(), me.getFirstName()).lastName(me.getLastName())
         );
       });

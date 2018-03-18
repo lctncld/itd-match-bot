@@ -1,5 +1,6 @@
 package com.epam.match.service.telegram;
 
+import com.epam.match.MessageSourceAdapter;
 import com.epam.match.domain.Gender;
 import com.epam.match.service.geo.GeoLocationService;
 import com.epam.match.service.session.ProfileSetupStep;
@@ -9,7 +10,6 @@ import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.CallbackQuery;
 import com.pengrad.telegrambot.model.Contact;
-import com.pengrad.telegrambot.model.Location;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
@@ -35,12 +35,15 @@ public class ProfileService {
 
   private final DirectCallService directCallService;
 
+  private final MessageSourceAdapter messageSource;
+
   public ProfileService(GeoLocationService locationService, SessionService sessionService, PersistentStore store,
-    DirectCallService directCallService) {
+    DirectCallService directCallService, MessageSourceAdapter messageSource) {
     this.locationService = locationService;
     this.sessionService = sessionService;
     this.store = store;
     this.directCallService = directCallService;
+    this.messageSource = messageSource;
   }
 
   @MessageMapping("/profile")
@@ -51,9 +54,9 @@ public class ProfileService {
       .single()
       .then(getProfileAsString(userId))
       .map(profile -> profileMenu(message.chat().id(), profile))
-      .onErrorReturn(new SendMessage(message.chat().id(), "Share your phone number first!")
+      .onErrorReturn(new SendMessage(message.chat().id(), messageSource.get("profile.share.phone.alert"))
         .replyMarkup(new ReplyKeyboardMarkup(new KeyboardButton[] {
-          new KeyboardButton("Share phone")
+          new KeyboardButton(messageSource.get("profile.share.phone.share_button"))
             .requestContact(true) })
           .oneTimeKeyboard(true)
           .resizeKeyboard(true))
@@ -72,43 +75,52 @@ public class ProfileService {
           StringBuilder out = new StringBuilder();
 
           if (selfNotEmpty) {
-            out.append("You are: ")
+            out.append(messageSource.get("profile.you.prefix"))
+              .append(" ")
               .append(profile.getAge().map(String::valueOf).orElse(""))
-              .append(profile.getGender().map(Gender::getEmoji).orElse(""));
+              .append(profile.getGender().map(Gender::getLocalization).map(messageSource::get).orElse(""));
           }
 
           if (matchNotEmpty) {
-            out.append("\nLooking for: ")
+            out.append("\n")
+              .append(messageSource.get("profile.match.prefix"))
+              .append(" ")
               .append(profile.getMatchMinAge().map(String::valueOf).orElse(""))
-              .append(minAndMaxAgeSpecified ? "-" : "")
+              .append(minAndMaxAgeSpecified
+                ? "-"
+                : "")
               .append(profile.getMatchMaxAge().map(String::valueOf).orElse(""))
-              .append(profile.getMatchGender().map(Gender::getEmoji).orElse(""));
+              .append(profile.getMatchGender().map(Gender::getLocalization).map(messageSource::get).orElse(""));
           }
 
           return out.toString();
         }
       )
-      .switchIfEmpty(Mono.just("Your profile appears to be blank"));
+      .switchIfEmpty(Mono.just(messageSource.get("profile.blank")));
+  }
+
+  private SendMessage profileMenuWithDefaultMessage(Long chatId) {
+    return profileMenu(chatId, messageSource.get("profile.set.callback"));
   }
 
   private SendMessage profileMenu(Long chatId, String message) {
     InlineKeyboardMarkup actions = new InlineKeyboardMarkup(
       new InlineKeyboardButton[] {
-        new InlineKeyboardButton("Your gender")
+        new InlineKeyboardButton(messageSource.get("profile.set.button.your.gender"))
           .callbackData("/profile/me/gender"),
-        new InlineKeyboardButton("Your age")
+        new InlineKeyboardButton(messageSource.get("profile.set.button.your.age"))
           .callbackData("/profile/me/age"),
       },
       new InlineKeyboardButton[] {
-        new InlineKeyboardButton("Gender")
+        new InlineKeyboardButton(messageSource.get("profile.set.button.match.gender"))
           .callbackData("/profile/match/gender"),
-        new InlineKeyboardButton("Min age")
+        new InlineKeyboardButton(messageSource.get("profile.set.button.match.age.from"))
           .callbackData("/profile/match/age/min"),
-        new InlineKeyboardButton("Max age")
+        new InlineKeyboardButton(messageSource.get("profile.set.button.match.age.to"))
           .callbackData("/profile/match/age/max")
       },
       new InlineKeyboardButton[] {
-        new InlineKeyboardButton("No more changes needed")
+        new InlineKeyboardButton(messageSource.get("profile.set.button.done"))
           .callbackData("/profile/done")
       }
     );
@@ -125,7 +137,7 @@ public class ProfileService {
       .map(Integer::valueOf)
       .flatMap(age -> store.setAge(userId.toString(), age))
       .then(sessionService.clear(userId))
-      .thenReturn(profileMenu(chatId, "Anything else?"))
+      .thenReturn(profileMenuWithDefaultMessage(chatId))
       .onErrorReturn(ageValidationFailMessage(chatId));
   }
 
@@ -133,10 +145,13 @@ public class ProfileService {
   public Mono<? extends BaseRequest> setLocation(Update update) {
     Message message = update.message();
     Long chatId = message.chat().id();
-    Location location = message.location();
-    return locationService.update(message.from().id().toString(), location.latitude(), location.longitude())
-      .thenReturn(new SendMessage(chatId, "Your location is updated, I'll let others know"))
-      .onErrorReturn(new SendMessage(chatId, "Something went wrong"));
+    return Mono.justOrEmpty(message.location())
+      .flatMap(location -> {
+        String userId = message.from().id().toString();
+        return locationService.update(userId, location.latitude(), location.longitude())
+          .thenReturn(new SendMessage(chatId, messageSource.get("profile.set.location")));
+      })
+      .switchIfEmpty(Mono.just(new SendMessage(chatId, messageSource.get("profile.set.location.error"))));
   }
 
   @MessageMapping("/profile/match/gender/male")
@@ -160,7 +175,7 @@ public class ProfileService {
     return store.setMatchGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        profileMenu(chatId, "Anything else?")
+        profileMenuWithDefaultMessage(chatId)
       ));
   }
 
@@ -180,7 +195,7 @@ public class ProfileService {
     return store.setGender(cb.from().id().toString(), gender)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        profileMenu(chatId, "Anything else?")
+        profileMenuWithDefaultMessage(chatId)
       ));
   }
 
@@ -193,7 +208,7 @@ public class ProfileService {
       .map(Integer::valueOf)
       .flatMap(age -> store.setMatchMinAge(userId.toString(), age))
       .then(sessionService.clear(userId))
-      .thenReturn(profileMenu(chatId, "Anything else?"))
+      .thenReturn(profileMenuWithDefaultMessage(chatId))
       .onErrorReturn(ageValidationFailMessage(chatId));
   }
 
@@ -206,12 +221,12 @@ public class ProfileService {
       .map(Integer::valueOf)
       .flatMap(age -> store.setMatchMaxAge(userId.toString(), age))
       .then(sessionService.clear(userId))
-      .thenReturn(profileMenu(chatId, "Anything else?"))
+      .thenReturn(profileMenuWithDefaultMessage(chatId))
       .onErrorReturn(ageValidationFailMessage(chatId));
   }
 
   private SendMessage ageValidationFailMessage(Long chatId) {
-    return new SendMessage(chatId, "Respond with a number please");
+    return new SendMessage(chatId, messageSource.get("profile.validate.number"));
   }
 
   @MessageMapping("/profile/done")
@@ -231,7 +246,7 @@ public class ProfileService {
     Message message = update.message();
     Contact contact = message.contact();
     if (contact.userId() == null || !contact.userId().equals(message.from().id())) {
-      return Mono.just(new SendMessage(message.chat().id(), "I don't believe you"));
+      return Mono.just(new SendMessage(message.chat().id(), messageSource.get("profile.validate.contact")));
     }
     Integer id = update.message().from().id();
     return store.setContact(id.toString(), com.epam.match.domain.Contact.builder()
@@ -242,7 +257,7 @@ public class ProfileService {
       .build()
     )
       .then(directCallService.setDefaultImage(id))
-      .thenReturn(profileMenu(message.chat().id(), "Now, who are we looking for?"));
+      .thenReturn(profileMenu(message.chat().id(), messageSource.get("profile.set.greeting")));
   }
 
   @MessageMapping("/photo")
@@ -251,7 +266,7 @@ public class ProfileService {
     PhotoSize photo = message.photo()[0];
     String photoId = photo.fileId();
     return store.setImage(message.from().id().toString(), photoId)
-      .thenReturn(new SendMessage(message.chat().id(), "Updated your photo!"));
+      .thenReturn(new SendMessage(message.chat().id(), messageSource.get("profile.set.photo")));
   }
 
   @MessageMapping("/reset")
@@ -259,6 +274,6 @@ public class ProfileService {
     Integer id = update.message().from().id();
     return store.resetProfile(id.toString())
       .then(locationService.delete(id.toString()))
-      .thenReturn(new SendMessage(update.message().chat().id(), "Your profile was cleared, want some /help?"));
+      .thenReturn(new SendMessage(update.message().chat().id(), messageSource.get("profile.cleared")));
   }
 }

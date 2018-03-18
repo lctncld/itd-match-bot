@@ -1,19 +1,17 @@
 package com.epam.match.domain;
 
-import com.epam.match.EmojiResolver;
-
 public enum Gender {
-  MALE(EmojiResolver.man()),
-  FEMALE(EmojiResolver.woman()),
-  BOTH(EmojiResolver.both());
+  MALE("gender.male"),
+  FEMALE("gender.female"),
+  BOTH("gender.both");
 
-  private final String emoji;
+  private final String localization;
 
-  Gender(String emoji) {
-    this.emoji = emoji;
+  Gender(String localization) {
+    this.localization = localization;
   }
 
-  public String getEmoji() {
-    return emoji;
+  public String getLocalization() {
+    return localization;
   }
 }
