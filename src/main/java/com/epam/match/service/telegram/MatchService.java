@@ -2,6 +2,7 @@ package com.epam.match.service.telegram;
 
 import com.epam.match.MessageSourceAdapter;
 import com.epam.match.domain.Contact;
+import com.epam.match.domain.Match;
 import com.epam.match.service.match.FindMatchService;
 import com.epam.match.service.store.PersistentStore;
 import com.epam.match.spring.annotation.MessageMapping;
@@ -14,6 +15,8 @@ import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.request.*;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.function.Function;
 
 @TelegramBotController
 public class MatchService {
@@ -45,15 +48,18 @@ public class MatchService {
   @SuppressWarnings("unchecked") // FIXME: Vasya, you can fix this
   private Mono<? extends BaseRequest> suggest(Long chatId, Integer userId) {
     return findMatchService.next(userId)
-      .map(match -> new SendPhoto(chatId, match.getImage())
-        .caption(match.getName())
-        .replyMarkup(new InlineKeyboardMarkup(new InlineKeyboardButton[] {
-          new InlineKeyboardButton(messageSource.get("match.button.like")).callbackData("/like/" + match.getId()),
-          new InlineKeyboardButton(messageSource.get("match.button.dislike")).callbackData("/dislike/" + match.getId())
-        }))
-      )
+      .map(matchToPhotoCard(chatId))
       .cast(BaseRequest.class)
       .defaultIfEmpty(new SendMessage(chatId, "Sorry, no one new is around"));
+  }
+
+  private Function<Match, SendPhoto> matchToPhotoCard(Long chatId) {
+    return match -> new SendPhoto(chatId, match.getImage())
+      .caption(match.getName())
+      .replyMarkup(new InlineKeyboardMarkup(new InlineKeyboardButton[] {
+        new InlineKeyboardButton(messageSource.get("match.button.like")).callbackData("/like/" + match.getId()),
+        new InlineKeyboardButton(messageSource.get("match.button.dislike")).callbackData("/dislike/" + match.getId())
+      }));
   }
 
   @MessageMapping("/like/")
