@@ -1,4 +1,4 @@
-package com.epam.match.config;
+package com.epam.match.spring.config;
 
 import io.lettuce.core.RedisClient;
 import io.lettuce.core.api.reactive.RedisReactiveCommands;

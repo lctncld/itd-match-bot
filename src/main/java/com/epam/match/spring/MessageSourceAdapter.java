@@ -1,4 +1,4 @@
-package com.epam.match;
+package com.epam.match.spring;
 
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;

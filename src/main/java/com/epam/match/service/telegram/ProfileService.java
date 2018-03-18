@@ -1,15 +1,14 @@
 package com.epam.match.service.telegram;
 
-import com.epam.match.MessageSourceAdapter;
 import com.epam.match.domain.Gender;
 import com.epam.match.service.geo.GeoLocationService;
 import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.service.session.SessionService;
 import com.epam.match.service.store.PersistentStore;
+import com.epam.match.spring.MessageSourceAdapter;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.CallbackQuery;
-import com.pengrad.telegrambot.model.Contact;
 import com.pengrad.telegrambot.model.Message;
 import com.pengrad.telegrambot.model.PhotoSize;
 import com.pengrad.telegrambot.model.Update;
@@ -151,7 +150,7 @@ public class ProfileService {
         return locationService.update(userId, location.latitude(), location.longitude())
           .thenReturn(new SendMessage(chatId, messageSource.get("profile.set.location")));
       })
-      .switchIfEmpty(Mono.just(new SendMessage(chatId, messageSource.get("profile.set.location.error"))));
+      .defaultIfEmpty(new SendMessage(chatId, messageSource.get("profile.set.location.error")));
   }
 
   @MessageMapping("/profile/match/gender/male")
@@ -244,20 +243,21 @@ public class ProfileService {
   @MessageMapping("/contact")
   public Mono<? extends BaseRequest> setContact(Update update) {
     Message message = update.message();
-    Contact contact = message.contact();
-    if (contact.userId() == null || !contact.userId().equals(message.from().id())) {
-      return Mono.just(new SendMessage(message.chat().id(), messageSource.get("profile.validate.contact")));
-    }
     Integer id = update.message().from().id();
-    return store.setContact(id.toString(), com.epam.match.domain.Contact.builder()
-      .phone(contact.phoneNumber())
-      .firstName(contact.firstName())
-      .lastName(contact.lastName())
-      .chatId(message.chat().id().toString())
-      .build()
-    )
-      .then(directCallService.setDefaultImage(id))
-      .thenReturn(profileMenu(message.chat().id(), messageSource.get("profile.set.greeting")));
+    return Mono.justOrEmpty(message.contact())
+      .filter(contact -> contact.userId() != null)
+      .filter(contact -> contact.userId().equals(message.from().id()))
+      .flatMap(contact -> store.setContact(id.toString(), com.epam.match.domain.Contact.builder()
+          .phone(contact.phoneNumber())
+          .firstName(contact.firstName())
+          .lastName(contact.lastName())
+          .chatId(message.chat().id().toString())
+          .build()
+        )
+          .then(directCallService.setDefaultImage(id))
+          .thenReturn(profileMenu(message.chat().id(), messageSource.get("profile.set.greeting")))
+      )
+      .defaultIfEmpty(new SendMessage(message.chat().id(), messageSource.get("profile.validate.contact")));
   }
 
   @MessageMapping("/photo")
