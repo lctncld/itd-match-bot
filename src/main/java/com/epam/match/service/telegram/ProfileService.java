@@ -8,7 +8,11 @@ import com.epam.match.service.session.SessionService;
 import com.epam.match.service.store.PersistentStore;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
-import com.pengrad.telegrambot.model.*;
+import com.pengrad.telegrambot.model.CallbackQuery;
+import com.pengrad.telegrambot.model.Contact;
+import com.pengrad.telegrambot.model.Message;
+import com.pengrad.telegrambot.model.PhotoSize;
+import com.pengrad.telegrambot.model.Update;
 import com.pengrad.telegrambot.model.request.InlineKeyboardButton;
 import com.pengrad.telegrambot.model.request.InlineKeyboardMarkup;
 import com.pengrad.telegrambot.model.request.KeyboardButton;
@@ -141,10 +145,13 @@ public class ProfileService {
   public Mono<? extends BaseRequest> setLocation(Update update) {
     Message message = update.message();
     Long chatId = message.chat().id();
-    Location location = message.location();
-    return locationService.update(message.from().id().toString(), location.latitude(), location.longitude())
-      .thenReturn(new SendMessage(chatId, messageSource.get("profile.set.location")))
-      .onErrorReturn(new SendMessage(chatId, messageSource.get("profile.set.location.error")));
+    return Mono.justOrEmpty(message.location())
+      .flatMap(location -> {
+        String userId = message.from().id().toString();
+        return locationService.update(userId, location.latitude(), location.longitude())
+          .thenReturn(new SendMessage(chatId, messageSource.get("profile.set.location")));
+      })
+      .switchIfEmpty(Mono.just(new SendMessage(chatId, messageSource.get("profile.set.location.error"))));
   }
 
   @MessageMapping("/profile/match/gender/male")
