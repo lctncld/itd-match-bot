@@ -1,6 +1,6 @@
 package com.epam.match.service.telegram;
 
-import com.epam.match.MessageSourceAdapter;
+import com.epam.match.spring.MessageSourceAdapter;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.Message;

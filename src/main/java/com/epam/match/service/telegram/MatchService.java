@@ -1,6 +1,6 @@
 package com.epam.match.service.telegram;
 
-import com.epam.match.MessageSourceAdapter;
+import com.epam.match.spring.MessageSourceAdapter;
 import com.epam.match.domain.Contact;
 import com.epam.match.domain.Match;
 import com.epam.match.service.match.FindMatchService;

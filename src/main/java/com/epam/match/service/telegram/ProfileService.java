@@ -1,6 +1,6 @@
 package com.epam.match.service.telegram;
 
-import com.epam.match.MessageSourceAdapter;
+import com.epam.match.spring.MessageSourceAdapter;
 import com.epam.match.domain.Gender;
 import com.epam.match.service.geo.GeoLocationService;
 import com.epam.match.service.session.ProfileSetupStep;
