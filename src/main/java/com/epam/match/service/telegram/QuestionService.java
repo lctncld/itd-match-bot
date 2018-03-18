@@ -1,6 +1,6 @@
 package com.epam.match.service.telegram;
 
-import com.epam.match.EmojiResolver;
+import com.epam.match.MessageSourceAdapter;
 import com.epam.match.service.session.ProfileSetupStep;
 import com.epam.match.service.session.SessionService;
 import com.epam.match.spring.annotation.MessageMapping;
@@ -20,8 +20,11 @@ public class QuestionService {
 
   private final SessionService session;
 
-  public QuestionService(SessionService session) {
+  private final MessageSourceAdapter messageSource;
+
+  public QuestionService(SessionService session, MessageSourceAdapter messageSource) {
     this.session = session;
+    this.messageSource = messageSource;
   }
 
   @MessageMapping("/profile/me/gender")
@@ -30,12 +33,12 @@ public class QuestionService {
     Long chatId = cb.message().chat().id();
     return Flux.just(
       new AnswerCallbackQuery(cb.id()),
-      new SendMessage(chatId, "Who are you?")
+      new SendMessage(chatId, messageSource.get("question.set.my.gender"))
         .replyMarkup(new InlineKeyboardMarkup(
           new InlineKeyboardButton[] {
-            new InlineKeyboardButton(EmojiResolver.man())
+            new InlineKeyboardButton(messageSource.get("gender.male"))
               .callbackData("/profile/me/gender/male"),
-            new InlineKeyboardButton(EmojiResolver.woman())
+            new InlineKeyboardButton(messageSource.get("gender.female"))
               .callbackData("/profile/me/gender/female")
           }
         )),
@@ -50,7 +53,7 @@ public class QuestionService {
     return session.set(cb.from().id(), ProfileSetupStep.SET_MY_AGE)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, "So, what's your age?"),
+        new SendMessage(chatId, messageSource.get("question.set.my.age")),
         new DeleteMessage(chatId, cb.message().messageId())
       ));
   }
@@ -61,14 +64,14 @@ public class QuestionService {
     Long chatId = cb.message().chat().id();
     return Flux.just(
       new AnswerCallbackQuery(cb.id()),
-      new SendMessage(chatId, "Who do you wanna find?")
+      new SendMessage(chatId, messageSource.get("question.set.match.gender"))
         .replyMarkup(new InlineKeyboardMarkup(
           new InlineKeyboardButton[] {
-            new InlineKeyboardButton(EmojiResolver.man())
+            new InlineKeyboardButton(messageSource.get("gender.male"))
               .callbackData("/profile/match/gender/male"),
-            new InlineKeyboardButton(EmojiResolver.woman())
+            new InlineKeyboardButton(messageSource.get("gender.female"))
               .callbackData("/profile/match/gender/female"),
-            new InlineKeyboardButton(EmojiResolver.both())
+            new InlineKeyboardButton(messageSource.get("gender.both"))
               .callbackData("/profile/match/gender/both")
           })
         ),
@@ -83,7 +86,7 @@ public class QuestionService {
     return session.set(cb.from().id(), ProfileSetupStep.SET_MATCH_MIN_AGE)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, "Send me min age"),
+        new SendMessage(chatId, messageSource.get("question.set.match.age.from")),
         new DeleteMessage(chatId, cb.message().messageId())
       ));
   }
@@ -95,7 +98,7 @@ public class QuestionService {
     return session.set(cb.from().id(), ProfileSetupStep.SET_MATCH_MAX_AGE)
       .thenMany(Flux.just(
         new AnswerCallbackQuery(cb.id()),
-        new SendMessage(chatId, "And the max age is?"),
+        new SendMessage(chatId, messageSource.get("question.set.match.age.to")),
         new DeleteMessage(chatId, cb.message().messageId())
       ));
   }
