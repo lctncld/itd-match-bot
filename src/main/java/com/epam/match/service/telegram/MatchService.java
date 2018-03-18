@@ -1,5 +1,6 @@
 package com.epam.match.service.telegram;
 
+import com.epam.match.MessageSourceAdapter;
 import com.epam.match.domain.Contact;
 import com.epam.match.service.store.PersistentStore;
 import com.epam.match.service.match.FindMatchService;
@@ -26,9 +27,13 @@ public class MatchService {
 
   private final PersistentStore store;
 
-  public MatchService(FindMatchService findMatchService, PersistentStore store) {
+  private final MessageSourceAdapter messageSource;
+
+  public MatchService(FindMatchService findMatchService, PersistentStore store,
+    MessageSourceAdapter messageSource) {
     this.findMatchService = findMatchService;
     this.store = store;
+    this.messageSource = messageSource;
   }
 
   @MessageMapping("/roll")
@@ -87,7 +92,7 @@ public class MatchService {
         Contact me = tuple.getT2();
         return Flux.just(
           new SendContact(me.getChatId(), match.getPhone(), match.getFirstName()).lastName(match.getLastName()),
-          new SendMessage(match.getChatId(), String.format("Hey, %s is interested in you!", me.getFirstName())),
+          new SendMessage(match.getChatId(), messageSource.get("mutual.like.notification", me.getFirstName())),
           new SendContact(match.getChatId(), me.getPhone(), me.getFirstName()).lastName(me.getLastName())
         );
       });

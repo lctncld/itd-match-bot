@@ -1,5 +1,6 @@
 package com.epam.match.service.telegram;
 
+import com.epam.match.MessageSourceAdapter;
 import com.epam.match.spring.annotation.MessageMapping;
 import com.epam.match.spring.annotation.TelegramBotController;
 import com.pengrad.telegrambot.model.Message;
@@ -15,6 +16,12 @@ import reactor.core.publisher.Mono;
 @TelegramBotController
 public class SimpleReplyService {
 
+  private final MessageSourceAdapter messageSource;
+
+  public SimpleReplyService(MessageSourceAdapter messageSource) {
+    this.messageSource = messageSource;
+  }
+
   @MessageMapping("/unknown_command")
   public Mono<BaseRequest> unknownCommand(Update update) {
     Message message = update.message();
@@ -27,7 +34,7 @@ public class SimpleReplyService {
       }
     }
     return Mono.just(
-      new SendMessage(message.chat().id(), "Unrecognized command. Try asking for /help")
+      new SendMessage(message.chat().id(), messageSource.get("unknown_command"))
         .replyMarkup(new ReplyKeyboardRemove())
     );
   }
@@ -36,10 +43,10 @@ public class SimpleReplyService {
   public Mono<BaseRequest> help(Update update) {
     Long chatId = update.message().chat().id();
     return Mono.just(
-      new SendMessage(chatId, "Hi! Type /profile to set up your profile, or try a button below!").replyMarkup(
+      new SendMessage(chatId, messageSource.get("help")).replyMarkup(
         new InlineKeyboardMarkup(
           new InlineKeyboardButton[] {
-            new InlineKeyboardButton("What is This?")
+            new InlineKeyboardButton(messageSource.get("help.button.title"))
               .callbackData("/overview"),
           })
       )
@@ -50,7 +57,7 @@ public class SimpleReplyService {
   public Mono<BaseRequest> overview(Update update) {
     return Mono.just(
       new AnswerCallbackQuery(update.callbackQuery().id())
-        .text("This is just a Demo! Try another button")
+        .text(messageSource.get("description"))
     );
   }
 }
