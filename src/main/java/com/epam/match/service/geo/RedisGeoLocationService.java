@@ -44,7 +44,7 @@ public class RedisGeoLocationService implements GeoLocationService {
       kilometers,
       GeoArgs.Unit.km
     )
-      .filter(user -> !user.equals(toWhom))
+      .filter(user -> !toWhom.equals(user))
       .doOnNext(user -> log.info("Found profile {} near {}", user, toWhom));
   }
 

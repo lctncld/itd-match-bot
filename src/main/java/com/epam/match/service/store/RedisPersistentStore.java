@@ -38,19 +38,19 @@ public class RedisPersistentStore implements PersistentStore {
 
   @Override
   public Mono<Boolean> isLikedBy(String who, String whom) {
-    return commands.sismember(Keys.likes(who), whom);
+    return commands.sismember(Keys.likes(whom), who);
   }
 
   @Override
   public Mono<Boolean> isDislikedBy(String who, String whom) {
-    return commands.sismember(Keys.dislikes(who), whom);
+    return commands.sismember(Keys.dislikes(whom), who);
   }
 
   @Override
   public Mono<Boolean> seen(String who, String whom) {
-    return isLikedBy(who, whom)
+    return isLikedBy(whom, who)
       .filter(Boolean::valueOf)
-      .switchIfEmpty(isDislikedBy(who, whom))
+      .switchIfEmpty(isDislikedBy(whom, who))
       .filter(Boolean::valueOf)
       .defaultIfEmpty(false);
   }
