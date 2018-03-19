@@ -235,6 +235,7 @@ public class ProfileService {
     return getProfileAsString(cb.from().id())
       .flatMapMany(profile -> Flux.just(
         new SendMessage(chatId, profile),
+        new SendMessage(chatId, messageSource.get("profile.set.remind.to.update.location")),
         new AnswerCallbackQuery(cb.id()),
         new DeleteMessage(chatId, cb.message().messageId())
       ));

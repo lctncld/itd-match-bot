@@ -11,6 +11,7 @@ import com.pengrad.telegrambot.model.request.ReplyKeyboardRemove;
 import com.pengrad.telegrambot.request.AnswerCallbackQuery;
 import com.pengrad.telegrambot.request.BaseRequest;
 import com.pengrad.telegrambot.request.SendMessage;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 @TelegramBotController
@@ -54,10 +55,10 @@ public class SimpleReplyService {
   }
 
   @MessageMapping(value = "/overview")
-  public Mono<BaseRequest> overview(Update update) {
-    return Mono.just(
-      new AnswerCallbackQuery(update.callbackQuery().id())
-        .text(messageSource.get("description"))
+  public Flux<BaseRequest> overview(Update update) {
+    return Flux.just(
+      new AnswerCallbackQuery(update.callbackQuery().id()),
+      new SendMessage(update.callbackQuery().message().chat().id(), messageSource.get("description"))
     );
   }
 }

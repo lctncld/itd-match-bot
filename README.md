@@ -16,16 +16,23 @@ One day, one day...
 ## Database Structure
 
 Redis KEYs:
-- user_id:profile
+
+- user_id:contact:
+    - first_name
+    - last_name
+    - chat_id
+    - phone
+- user_id:profile:
+    - age
+    - gender
+    - match_gender
+    - match_min_age
+    - match_max_age
 - user_id:image
+- user_id:seen
 - user_id:likes
 - user_id:dislikes
 - user_id:session
-- user_id:contact:* - namespace with sensitive data
-    * user_id:contact:phone
-    * user_id:contact:first_name
-    * user_id:contact:last_name
-    * user_id:contact:chat_id
 - locations
 
 ## Development guidelines
@@ -54,3 +61,9 @@ docker exec -it itd-redis redis-cli
 ```
 
 - Run application and try to ping your bot from Telegram
+
+- To show demo from the phone:
+```
+adb devices
+adb shell screenrecord --size=720x1440 --output-format=h264 - | mpv - --fps=30 --untimed --framedrop=no
+```
