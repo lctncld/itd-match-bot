@@ -50,7 +50,7 @@ public class MatchService {
     return findMatchService.next(userId)
       .map(matchToPhotoCard(chatId))
       .cast(BaseRequest.class)
-      .defaultIfEmpty(new SendMessage(chatId, "Sorry, no one new is around"));
+      .defaultIfEmpty(new SendMessage(chatId, messageSource.get("match.no.one.is.around")));
   }
 
   private Function<Match, SendPhoto> matchToPhotoCard(Long chatId) {
