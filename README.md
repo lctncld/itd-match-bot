@@ -61,3 +61,9 @@ docker exec -it itd-redis redis-cli
 ```
 
 - Run application and try to ping your bot from Telegram
+
+- To show demo from the phone:
+```
+adb devices
+adb shell screenrecord --size=720x1440 --output-format=h264 - | mpv - --fps=30
+```
