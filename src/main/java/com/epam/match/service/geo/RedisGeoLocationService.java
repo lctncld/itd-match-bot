@@ -23,8 +23,8 @@ public class RedisGeoLocationService implements GeoLocationService {
   public Mono<Void> update(String userId, Float latitude, Float longitude) {
     return commands.geoadd(
       key(),
-      latitude,
       longitude,
+      latitude,
       userId
     )
       .then();
