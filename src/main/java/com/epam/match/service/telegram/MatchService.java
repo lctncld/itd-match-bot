@@ -127,6 +127,6 @@ public class MatchService {
       .flatMap(store::getMatchById)
       .map(matchToPhotoCard(chatId))
       .cast(BaseRequest.class)
-      .defaultIfEmpty(new SendMessage(chatId, "Nothing to undo"));
+      .defaultIfEmpty(new SendMessage(chatId, messageSource.get("match.nothing.to.undo")));
   }
 }

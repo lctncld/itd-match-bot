@@ -15,10 +15,10 @@ public class MessageSourceAdapter {
   }
 
   public String get(String code) {
-    return messageSource.getMessage(code, new Object[] {}, Locale.getDefault());
+    return messageSource.getMessage(code, new Object[] {}, new Locale("ru"));
   }
 
   public String get(String code, String... args) {
-    return messageSource.getMessage(code, args, Locale.getDefault());
+    return messageSource.getMessage(code, args, new Locale("ru"));
   }
 }
